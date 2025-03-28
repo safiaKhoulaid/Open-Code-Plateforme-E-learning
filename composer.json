@@ -10,8 +10,7 @@
         "illuminate/console": "*",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^2.10.1",
-        "safia/authcontroller": "dev-main"
+        "laravel/tinker": "^2.10.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -70,5 +69,11 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": {
+        "local": {
+            "type": "path",
+            "url": "../laravel-auth-generator"
+        }
+    }
 }

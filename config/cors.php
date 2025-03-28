@@ -14,14 +14,16 @@
     |
     */
 
-    return [
-        'paths' => ['api/*', 'sanctum/csrf-cookie'],
-        'allowed_methods' => ['*'],
-        'allowed_origins' => ['http://localhost:5173'], // Ensure this matches your frontend URL
-        'allowed_origins_patterns' => [],
-        'allowed_headers' => ['*'],
-        'exposed_headers' => [],
-        'max_age' => 0,
-        'supports_credentials' => true, // Ensure this is true for Sanctum
-    ];
+
+        return [
+            'paths' => ['api/*', 'sanctum/csrf-cookie'],
+            'allowed_methods' => ['*'],
+            'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:5173')], // Ajustez selon votre URL frontend
+            'allowed_origins_patterns' => [],
+            'allowed_headers' => ['*'],
+            'exposed_headers' => [],
+            'max_age' => 0,
+            'supports_credentials' => true, // Doit être true pour Sanctum
+        ];// Ensure this is true for Sanctum
+
 

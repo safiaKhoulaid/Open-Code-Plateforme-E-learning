@@ -26,21 +26,33 @@ class AuthController extends Controller
                 'role' => 'required|string|in:admin,student,teacher'
             ]);
 
+            $isApproved = ($validated['role'] == 'student');
+
             $user = User::create([
                 'firstName' => $validated['firstName'],
                 'lastName' => $validated['lastName'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => $validated['role'],
-                
+                'is_approved' => $isApproved
+
             ]);
+
 
             Mail::to($user->email)->send(new WelcomeEmail($user));
 
+            // if ($validated['role'] === 'teacher') {
+
+            //     Mail::to('admin@example.com')->send(new NewTeacherRegistration($user));
+            // }
+
             return response()->json([
                 'user' => $user,
-                'message' => 'User created successfully'
+                'message' => $isApproved
+                    ? 'User created successfully. You can now log in.'
+                    : 'User created successfully. Your account requires admin approval before you can log in.'
             ], 201);
+
 
         } catch (ValidationException $e) {
             return response()->json([
@@ -69,6 +81,14 @@ class AuthController extends Controller
     }
 
     $user = Auth::user();
+    if ($user->is_approved === false) {
+        // Déconnecter l'utilisateur puisqu'il s'est connecté mais n'est pas approuvé
+        Auth::logout();
+
+        return response()->json([
+            'message' => 'Your account is pending approval. Please contact the administrator.'
+        ], 403);
+    }
     $token = $user->createToken('auth_token')->plainTextToken;
 
     return response()->json([
@@ -144,5 +164,11 @@ public function resetPassword(Request $request)
     } catch (\Exception $e) {
         return response()->json(['message' => 'Error occurred while resetting password'], 500);
     }
+}
+public function getUser(Request $request)
+{
+    return response()->json([
+        'user' => $request->user()
+    ]);
 }
 }

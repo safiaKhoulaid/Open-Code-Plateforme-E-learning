@@ -7,6 +7,10 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Symfony\Component\HttpKernel\Profiler\Profile;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable  implements MustVerifyEmail
 {
@@ -23,6 +27,7 @@ class User extends Authenticatable  implements MustVerifyEmail
         'settings',
         'role',
         'remember_token',
+        'is_approved'
     ];
 
     protected $casts = [
@@ -43,5 +48,80 @@ class User extends Authenticatable  implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(Profile::class);
+    }
+
+    public function settings(): HasOne
+    {
+        return $this->hasOne(UserSettings::class);
+    }
+
+    public function enrolledCourses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id');
+    }
+
+    public function teachingCourses(): HasMany
+    {
+        return $this->hasMany(Course::class, 'instructor_id');
+    }
+
+    public function progress(): HasMany
+    {
+        return $this->hasMany(Progress::class);
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    public function responses(): HasMany
+    {
+        return $this->hasMany(Response::class);
+    }
+
+    public function shoppingCart(): HasOne
+    {
+        return $this->hasOne(ShoppingCart::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function instructorAnalytics(): HasOne
+    {
+        return $this->hasOne(InstructorAnalytics::class, 'instructor_id');
+    }
+
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class, 'student_id');
     }
 }

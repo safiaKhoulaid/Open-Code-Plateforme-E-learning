@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0032a6cd0510c9aeab238eca96b4503c",
+    "content-hash": "1841c1b204629cf093930105e088298d",
     "packages": [
         {
             "name": "brick/math",
@@ -3350,55 +3350,7 @@
             ],
             "time": "2024-04-27T21:32:50+00:00"
         },
-        {
-            "name": "safia/authcontroller",
-            "version": "dev-main",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Saf513/make_ath_controller.git",
-                "reference": "6d25fc32ea4a518ada6d084f977ba82d66b60e63"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Saf513/make_ath_controller/zipball/6d25fc32ea4a518ada6d084f977ba82d66b60e63",
-                "reference": "6d25fc32ea4a518ada6d084f977ba82d66b60e63",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/support": "^12.0",
-                "php": "^8.2"
-            },
-            "default-branch": true,
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Safia\\Authcontroller\\AuthControllerServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Safia\\Authcontroller\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "safia",
-                    "email": "safiakhoulaid11@gmail.com"
-                }
-            ],
-            "description": "Laravel authentication controller generator",
-            "support": {
-                "issues": "https://github.com/Saf513/make_ath_controller/issues",
-                "source": "https://github.com/Saf513/make_ath_controller/tree/main"
-            },
-            "time": "2025-03-20T12:25:59+00:00"
-        },
+        
         {
             "name": "symfony/clock",
             "version": "v7.2.0",
