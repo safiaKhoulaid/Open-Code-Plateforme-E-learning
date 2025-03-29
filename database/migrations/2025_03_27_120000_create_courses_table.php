@@ -14,8 +14,8 @@ return new class extends Migration
             $table->string('subtitle')->nullable();
             $table->text('description');
             $table->foreignId('instructor_id')->constrained('users','id')->onDelete('cascade');
-            $table->string('level');
-            $table->string('language');
+            $table->enum('level', ['beginner', 'intermediate', 'advanced']);
+            $table->enum('language',['fr', 'en', 'es', 'de', 'it', 'ja', 'zh', 'ar', 'pt', 'ru', 'nl', 'pl', 'tr', 'hi', 'bn', 'th', 'vi', 'ms', 'id', 'ko', 'ru', 'ar', 'es', 'pt', 'fr', 'de', 'it', 'ja', 'zh', 'ar', 'pt', 'ru', 'nl', 'pl', 'tr', 'hi', 'bn', 'th', 'vi', 'ms', 'id', 'ko']);
             $table->string('image_url')->nullable();
             $table->string('video_url')->nullable();
             $table->decimal('price', 10, 2);
