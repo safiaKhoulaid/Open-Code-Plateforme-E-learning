@@ -20,7 +20,7 @@ class SettingController extends Controller
      */
     public function create()
     {
-        //
+       
     }
 
     /**
