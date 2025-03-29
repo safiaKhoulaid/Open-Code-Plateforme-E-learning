@@ -11,9 +11,6 @@ use Illuminate\Support\Str;
 
 class CourseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $courses = Course::with(['instructor', 'categories', 'tags'])
