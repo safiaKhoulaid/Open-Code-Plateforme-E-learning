@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,7 +25,7 @@ class CourseFactory extends Factory
           'level' => $this->faker->randomElement(['beginner', 'intermediate', 'advanced']),
           'language' => $this->faker->randomElement(['fr', 'en', 'es', 'de', 'it', 'ja', 'zh', 'ar', 'pt', 'ru', 'nl', 'pl', 'tr', 'hi', 'bn', 'th', 'vi', 'ms', 'id', 'ko', 'ru', 'ar', 'es', 'pt', 'fr', 'de', 'it', 'ja', 'zh', 'ar', 'pt', 'ru', 'nl', 'pl', 'tr', 'hi', 'bn', 'th', 'vi', 'ms', 'id', 'ko']),
           'image_url' => $this->faker->imageUrl,
-          'video_url' => $this->faker->videoUrl,
+
           'price' => $this->faker->randomFloat(2, 0, 100),
           'discount' => $this->faker->randomFloat(2, 0, 100),
           'published_date' => $this->faker->dateTimeBetween('-1 year', 'now'),
@@ -39,8 +40,6 @@ class CourseFactory extends Factory
           'has_certificate' => $this->faker->boolean,
           'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
           'updated_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
-          'created_by' => $this->faker->randomElement([\App\Models\User::factory(), null]),
-          'updated_by' => $this->faker->randomElement([\App\Models\User::factory(), null]),
 
         ];
     }
