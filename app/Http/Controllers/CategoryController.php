@@ -4,10 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Http\Requests\CategoryRequest;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request as RequestFacade;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
 
 class CategoryController extends Controller
 {
+    use AuthorizesRequests, ValidatesRequests;
+
     /**
      * Display a listing of the resource.
      */
@@ -17,7 +25,7 @@ class CategoryController extends Controller
             ->orderBy('display_order')
             ->paginate(20);
 
-        return view('categories.index', compact('categories'));
+        return response()->json($categories);
     }
 
     /**
@@ -25,6 +33,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
+
         $categories = Category::where('is_active', true)->get();
         return view('categories.create', compact('categories'));
     }
@@ -32,26 +41,18 @@ class CategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(CategoryRequest $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
-            'is_active' => 'boolean',
-            'display_order' => 'required|integer|min:0'
-        ]);
-
-        if ($request->hasFile('image')) {
-            $validated['image_url'] = $request->file('image')->store('categories', 'public');
+        $validated = $request->validated();
+        if(Category::where('title', $validated['title'])->exists()){
+            return response()->json(['error' => 'La catégorie existe déjà'], 400);
         }
 
-        Category::create($validated);
+        $category = Category::create($validated);
 
-        return redirect()->route('categories.index')
-            ->with('success', 'Catégorie créée avec succès.');
+        return response()->json($category, 201);
     }
+
 
     /**
      * Display the specified resource.
@@ -91,6 +92,16 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
             'display_order' => 'required|integer|min:0'
         ]);
+
+        // S'assurer que is_active est un booléen
+        if (isset($validated['is_active'])) {
+            $validated['is_active'] = (bool)$validated['is_active'];
+        }
+
+        // S'assurer que display_order est un entier
+        if (isset($validated['display_order'])) {
+            $validated['display_order'] = (int)$validated['display_order'];
+        }
 
         if ($request->hasFile('image')) {
             if ($category->image_url) {

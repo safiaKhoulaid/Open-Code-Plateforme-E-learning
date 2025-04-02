@@ -8,7 +8,9 @@
     "require": {
         "php": "^8.2",
         "illuminate/console": "*",
-        "laravel/framework": "^12.0",
+        "illuminate/database": "*",
+        "laravel/framework": "^12.5",
+        "laravel/legacy-factories": "^1.4",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1"
     },
