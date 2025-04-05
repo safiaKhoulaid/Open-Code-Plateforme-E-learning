@@ -71,5 +71,6 @@ Route::get('/categories/{category}/courses', [CategoryController::class, 'getCou
 //     Route::get('/{category}/courses', [CategoryController::class, 'getCourses']);
 // });
 Route::post('/courses', [CourseController::class, 'store']);
+Route::get('/courses', [CourseController::class, 'index']);
 });
 

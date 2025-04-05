@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('subtitle')->nullable();
             $table->text('description');
+            $table->string('slug')->unique();
             $table->foreignId('instructor_id')->constrained('users','id')->onDelete('cascade');
             $table->enum('level', ['beginner', 'intermediate', 'advanced']);
             $table->enum('language',['fr', 'en', 'es', 'de', 'it', 'ja', 'zh', 'ar', 'pt', 'ru', 'nl', 'pl', 'tr', 'hi', 'bn', 'th', 'vi', 'ms', 'id', 'ko', 'ru', 'ar', 'es', 'pt', 'fr', 'de', 'it', 'ja', 'zh', 'ar', 'pt', 'ru', 'nl', 'pl', 'tr', 'hi', 'bn', 'th', 'vi', 'ms', 'id', 'ko']);

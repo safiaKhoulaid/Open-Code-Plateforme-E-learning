@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\Category;
+use App\Models\Tag;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,5 +79,30 @@ class CourseController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+
+    public function index(): JsonResponse
+    {
+        $courses = Course::with(['categories', 'tags', 'instructor'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(12);
+
+        $categories = Category::where('is_active', true)
+            ->orderBy('display_order')
+            ->get();
+
+        $tags = Tag::orderBy('popularity', 'desc')
+            ->take(10)
+            ->get();
+
+        return response()->json([
+            'data' => [
+                'courses' => $courses,
+                'categories' => $categories,
+                'tags' => $tags
+            ],
+            'message' => 'Données récupérées avec succès'
+        ]);
     }
 }

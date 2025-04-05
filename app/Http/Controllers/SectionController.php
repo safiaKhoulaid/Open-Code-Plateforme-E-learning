@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Section;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class SectionController extends Controller
 {
+    use AuthorizesRequests;
+
     public function store(Request $request, Course $course)
     {
         $this->authorize('update', $course);

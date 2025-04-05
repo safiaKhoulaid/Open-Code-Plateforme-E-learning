@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Tag;
 use App\Models\User;
-use App\Models\Course;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Course;
+use App\Models\Lesson;
+use App\Models\Section;
 use App\Models\Category;
 use Illuminate\Database\Seeder;
 
@@ -15,8 +18,47 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Créer quelques utilisateurs
         // User::factory(10)->create();
-        // Category::factory(10)->create();
-        Course::factory(10)->create();
+        // Tag::factory(10)->create();
+        // Course::factory(10)->create();
+        Section::factory(10)->create();
+        Lesson::factory(10)->create();
+
+        // Créer des catégories spécifiques
+        // Category::create([
+        //     'title' => 'Développement Web',
+        //     'description' => 'Cours de développement web',
+
+        //     'is_active' => true,
+        //     'display_order' => 1
+        // ]);
+
+        // Category::create([
+        //     'title' => 'Programmation',
+        //     'description' => 'Cours de programmation',
+
+        //     'is_active' => true,
+        //     'display_order' => 2
+        // ]);
+
+        // // Créer des tags spécifiques
+        // Tag::create([
+        //     'name' => 'Laravel',
+        //     'course_count' => 0,
+        //     'popularity' => 0
+        // ]);
+
+        // Tag::create([
+        //     'name' => 'PHP',
+        //     'course_count' => 0,
+        //     'popularity' => 0
+        // ]);
+
+        // Créer les tags et les cours
+        // $this->call([
+        //     TagSeeder::class,
+        //     CourseSeeder::class,
+        // ]);
     }
 }
