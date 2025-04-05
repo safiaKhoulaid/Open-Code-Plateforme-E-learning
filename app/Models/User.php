@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Course;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -60,9 +61,10 @@ class User extends Authenticatable  implements MustVerifyEmail
         return $this->hasOne(UserSettings::class);
     }
 
-    public function enrolledCourses(): BelongsToMany
+    public function enrolledCourses()
     {
-        return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id');
+        return $this->belongsToMany(Course::class, 'course_enrollments', 'user_id', 'course_id')
+            ->withTimestamps();
     }
 
     public function teachingCourses(): HasMany
@@ -75,7 +77,7 @@ class User extends Authenticatable  implements MustVerifyEmail
         return $this->hasMany(Progress::class);
     }
 
-    public function certificates(): HasMany
+    public function certificates()
     {
         return $this->hasMany(Certificate::class);
     }
