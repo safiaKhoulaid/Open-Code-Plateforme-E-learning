@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\Section;
 use App\Models\Category;
+use App\Models\Enrollment;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -24,6 +25,7 @@ class DatabaseSeeder extends Seeder
         // Course::factory(10)->create();
         Section::factory(10)->create();
         Lesson::factory(10)->create();
+        Enrollment::factory(10)->create();
 
         // Créer des catégories spécifiques
         // Category::create([

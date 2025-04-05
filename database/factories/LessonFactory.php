@@ -20,7 +20,8 @@ class LessonFactory extends Factory
             'section_id' => \App\Models\Section::factory(),
             'title' => fake()->sentence(),
             'description' => fake()->paragraph(),
-            'content' => fake()->paragraphs(3, true),
+            'content_type' => fake()->randomElement(['text', 'video', 'audio', 'image', 'pdf', 'link']),
+            'content_url' => fake()->url(),
             'order' => fake()->numberBetween(0, 100),
             'is_published' => fake()->boolean(),
             'duration' => fake()->numberBetween(5, 120)

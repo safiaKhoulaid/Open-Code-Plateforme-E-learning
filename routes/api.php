@@ -10,6 +10,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/user', function (Request $request) {
    $users = DB::table('users')
@@ -72,5 +73,10 @@ Route::get('/categories/{category}/courses', [CategoryController::class, 'getCou
 // });
 Route::post('/courses', [CourseController::class, 'store']);
 Route::get('/courses', [CourseController::class, 'index']);
+
+// Routes pour le tableau de bord
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/dashboard', [DashboardStudentController::class, 'index']);
+});
 });
 
