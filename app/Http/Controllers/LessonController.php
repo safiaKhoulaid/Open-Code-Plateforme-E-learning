@@ -31,14 +31,14 @@ class LessonController extends Controller
      */
     public function store(Request $request, Course $course, Section $section)
     {
-        $this->authorize('update', $course);
+
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'order' => 'required|integer|min:0',
-            'content_type' => 'required|string|in:VIDEO,DOCUMENT,QUIZ',
-            'content_url' => 'required_if:content_type,VIDEO|nullable|url',
+            'content_type' => 'required|string|in:video,document,quiz,pdf',
+            'content_url' => 'required_if:content_type,video|nullable|file',
             'duration' => 'required|integer|min:0',
             'is_free' => 'boolean',
             'is_published' => 'boolean'
@@ -50,12 +50,11 @@ class LessonController extends Controller
 
         $lesson = $section->lessons()->create($validated);
 
-        return back()->with('success', 'Leçon créée avec succès.');
+        return response()->json($lesson, 200, ['Access-Control-Allow-Origin' => '*']);
     }
 
     /**
-     * Display the specified resource.
-     */
+     * Display the specified r
     public function show(Lesson $lesson)
     {
         //

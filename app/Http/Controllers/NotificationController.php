@@ -4,12 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
+    use AuthorizesRequests;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $notifications = auth()->user()->notifications()
+        $notifications = Auth::user()->notifications()
             ->orderBy('timestamp', 'desc')
             ->paginate(20);
 
@@ -29,7 +43,7 @@ class NotificationController extends Controller
 
     public function markAllAsRead()
     {
-        auth()->user()->notifications()
+        Auth::user()->notifications()
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
@@ -47,14 +61,14 @@ class NotificationController extends Controller
 
     public function clearAll()
     {
-        auth()->user()->notifications()->delete();
+        Auth::user()->notifications()->delete();
 
         return back()->with('success', 'Toutes les notifications ont été supprimées.');
     }
 
     public function getUnreadCount()
     {
-        $count = auth()->user()->notifications()
+        $count = Auth::user()->notifications()
             ->where('is_read', false)
             ->count();
 
@@ -63,7 +77,7 @@ class NotificationController extends Controller
 
     public function getLatest()
     {
-        $notifications = auth()->user()->notifications()
+        $notifications = Auth::user()->notifications()
             ->where('is_read', false)
             ->orderBy('timestamp', 'desc')
             ->take(5)

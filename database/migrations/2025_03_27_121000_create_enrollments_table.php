@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->timestamp('enrollment_date');
-            $table->timestamp('expiry_date')->nullable();
+            $table->timestamp(column: 'expiry_date')->nullable();
             $table->decimal('price', 10, 2);
             $table->string('payment_id');
             $table->enum('status', ['ACTIVE', 'COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'])->default('ACTIVE');

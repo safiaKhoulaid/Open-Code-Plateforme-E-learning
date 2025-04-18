@@ -45,6 +45,7 @@ class Course extends Model
         'average_rating' => 'decimal:2',
         'has_certificate' => 'boolean'
     ];
+    
 
     public function instructor(): BelongsTo
     {

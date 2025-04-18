@@ -9,11 +9,11 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class SectionController extends Controller
 {
-    use AuthorizesRequests;
+
 
     public function store(Request $request, Course $course)
     {
-        $this->authorize('update', $course);
+        // $this->authorize('update', $course);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -23,7 +23,8 @@ class SectionController extends Controller
 
         $section = $course->sections()->create($validated);
 
-        return back()->with('success', 'Section créée avec succès.');
+        // return back()->with('success', 'Section créée avec succès.');
+    return response()->json([$section->id],200);
     }
 
     public function update(Request $request, Course $course, Section $section)

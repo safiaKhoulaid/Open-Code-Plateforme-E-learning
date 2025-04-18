@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-     Schema::table('courses',function(Blueprint $table){
-        $table->foreignId('category_id')->nullable()->constrained('categories');
-     });
+       Schema::table('certificates', function (Blueprint $table) {
+        $table->json('skills')->nullable();
+       });
     }
 
     /**
@@ -21,9 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('courses',function(Blueprint $table){
-            $table->dropForeign(['category_id']);
-            $table->dropColumn('category_id');
+        Schema::table('certificates', function (Blueprint $table) {
+            $table->dropColumn('skills');
         });
     }
 };

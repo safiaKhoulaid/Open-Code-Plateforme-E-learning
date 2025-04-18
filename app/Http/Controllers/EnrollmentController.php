@@ -8,12 +8,17 @@ use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Storage;
 
 class EnrollmentController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index()
     {
-        $enrollments = auth()->user()->enrolledCourses()
+        $enrollments = Auth::user()->enrolledCourses()
             ->with(['course', 'course.instructor'])
             ->paginate(10);
 
@@ -22,7 +27,7 @@ class EnrollmentController extends Controller
 
     public function store(Request $request, Course $course)
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         if ($user->enrolledCourses()->where('course_id', $course->id)->exists()) {
             return back()->with('error', 'Vous êtes déjà inscrit à ce cours.');
@@ -95,7 +100,7 @@ class EnrollmentController extends Controller
     {
         $this->authorize('view', $course);
 
-        $enrollment = auth()->user()->enrolledCourses()
+        $enrollment = Auth::user()->enrolledCourses()
             ->where('course_id', $course->id)
             ->first();
 
@@ -108,7 +113,7 @@ class EnrollmentController extends Controller
 
     public function destroy(Course $course)
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         if (!$user->enrolledCourses()->where('course_id', $course->id)->exists()) {
             return back()->with('error', 'Vous n\'êtes pas inscrit à ce cours.');
@@ -125,7 +130,7 @@ class EnrollmentController extends Controller
         $this->authorize('view', $course);
 
         $certificate = $course->certificates()
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->first();
 
         if (!$certificate) {
@@ -140,7 +145,7 @@ class EnrollmentController extends Controller
         $this->authorize('view', $course);
 
         $certificate = $course->certificates()
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->first();
 
         if (!$certificate || !$certificate->pdf_url) {

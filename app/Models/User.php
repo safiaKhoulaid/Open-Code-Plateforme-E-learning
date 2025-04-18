@@ -12,6 +12,7 @@ use Symfony\Component\HttpKernel\Profiler\Profile;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class User extends Authenticatable  implements MustVerifyEmail
 {

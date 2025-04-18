@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\User;
+use App\Models\Profile;
+use App\Models\Setting;
 use App\Mail\WelcomeEmail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -18,6 +20,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
+
             $validated = $request->validate([
                 'firstName' => 'required|string',
                 'lastName' => 'required|string',
@@ -37,6 +40,24 @@ class AuthController extends Controller
                 'is_approved' => $isApproved
 
             ]);
+            $profile = Profile::create([
+                'user_id' => $user->id,
+                'firstName' => $user->firstName,
+                'lastName' => $user->lastName,
+
+            ]);
+            $setting = Setting::create([
+                'user_id' => $user->id,
+                'email_notifications' => true,
+                'mobile_notifications' => true,
+                'language' => 'fr',
+                'timezone' => 'Europe/Paris',
+                'privacy_settings' => json_encode([
+                    'profile_visibility' => 'public',
+                    'course_progress' => 'public',
+                    'show_email' => false
+                ])
+            ]);
 
 
             Mail::to($user->email)->send(new WelcomeEmail($user));
@@ -48,6 +69,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'user' => $user,
+                'profile' => $profile,
                 'message' => $isApproved
                     ? 'User created successfully. You can now log in.'
                     : 'User created successfully. Your account requires admin approval before you can log in.'

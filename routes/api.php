@@ -3,19 +3,22 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\testController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SectionController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardStudentController;
 
-Route::get('/user', function (Request $request) {
+Route::get('/users', function (Request $request) {
    $users = DB::table('users')
-   ->select('role', DB::raw('count(*) as total'))
-   ->groupBy('role')
+   ->select('*')
    ->get();
    return response()->json($users);
 });
@@ -26,7 +29,10 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 
 
-Route::middleware('auth:sanctum')->group(function(){
+Route::middleware('auth:sanctum')->group(function()
+{
+    Route::post('/courses/{course}/sections', [SectionController::class, 'store']);
+
 
 Route::post('/logout',[AuthController::class,'logout']);
 Route::post('/profile/{user_id}',[ProfileController::class , 'store']);
@@ -71,12 +77,29 @@ Route::get('/categories/{category}/courses', [CategoryController::class, 'getCou
 //     Route::get('/{category}/subcategories', [CategoryController::class, 'getSubcategories']);
 //     Route::get('/{category}/courses', [CategoryController::class, 'getCourses']);
 // });
-Route::post('/courses', [CourseController::class, 'store']);
+
 Route::get('/courses', [CourseController::class, 'index']);
 
 // Routes pour le tableau de bord
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/dashboard', [DashboardStudentController::class, 'index']);
+    Route::get('/dashboard-student', [DashboardStudentController::class, 'index']);
 });
 });
+Route::get('/courses', [CourseController::class, 'index']);
+Route::get('/courses/{id}', [CourseController::class, 'show']);
+Route::post('/courses', [CourseController::class, 'store']);
 
+// les routes de section
+Route::post('/courses/{course}/sections', [SectionController::class, 'store']);
+Route::put('/courses/{course}/sections/{section}', [SectionController::class, 'update']);
+Route::delete('/courses/{course}/sections/{section}', [SectionController::class, 'destroy']);
+Route::post('/courses/{course}/sections/reorder', [SectionController::class, 'reorder']);
+Route::patch('/courses/{course}/sections/{section}/toggle-publish', [SectionController::class, 'togglePublish']);
+
+Route::post('/courses/{course}/sections/{section}/lessons', [LessonController::class, 'store']);
+Route::put('/courses/{course}/sections/{section}/lessons/{lesson}', [LessonController::class, 'update']);
+Route::delete('/courses/{course}/sections/{section}/lessons/{lesson}', [LessonController::class, 'destroy']);
+Route::post('/courses/{course}/sections/{section}/lessons/reorder', [LessonController::class, 'reorder']);
+Route::patch('/courses/{course}/sections/{section}/lessons/{lesson}/toggle-publish', [LessonController::class, 'togglePublish']);
+
+Route::get('/test ', [testController::class , 'index']);

@@ -17,8 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
+
+        // Ajouter le middleware CORS à toutes les routes
+        $middleware->append(\App\Http\Middleware\Cors::class);
     })
-    
+
 
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -11,21 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('settings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->boolean('email_notifications')->default(true);
-            $table->boolean('mobile_notifications')->default(true);
-            $table->string('language')->default('fr');
-            $table->string('timezone')->default('Europe/Paris');
-            $table->json('privacy_settings')->default(json_encode([
-                'profile_visibility' => 'public',
-                'course_progress' => 'public',
-                'show_email' => false
-            ]));
-            $table->json('notification_types')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('settings')) {
+            Schema::create('settings', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->boolean('email_notifications')->default(true);
+                $table->boolean('mobile_notifications')->default(true);
+                $table->string('language')->default('fr');
+                $table->string('timezone')->default('Europe/Paris');
+                $table->json('privacy_settings')->default(json_encode([
+                    'profile_visibility' => 'public',
+                    'course_progress' => 'public',
+                    'show_email' => false
+                ]));
+                $table->json('notification_types')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

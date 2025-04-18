@@ -22,7 +22,8 @@ class CategoryFactory extends Factory
             'image_url' => $this->faker->imageUrl,
             'is_active' => $this->faker->boolean,
             'display_order' => $this->faker->numberBetween(0, 100),
-            
+            'parent_id' => $this->faker->optional()->numberBetween(1, 10),
+
         ];
     }
 }

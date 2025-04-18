@@ -21,7 +21,12 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::with('parent')
+        $categories = Category::with('children')
+            ->whereNull('parent_id')
+            ->orWhereNotExists(function ($query) {
+                $query->from('categories as c')
+                    ->whereColumn('c.parent_id', 'categories.id');
+            })
             ->orderBy('display_order')
             ->paginate(20);
 

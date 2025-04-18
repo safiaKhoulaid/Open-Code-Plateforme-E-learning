@@ -25,10 +25,11 @@ class CourseController extends Controller
                 'language' => 'required|string',
                 'price' => 'required|numeric|min:0',
                 'discount' => 'nullable|numeric|min:0',
-                'categories' => 'required|array',
-                'categories.*' => 'exists:categories,id',
-                'tags' => 'nullable|array',
-                'tags.*' => 'exists:tags,id',
+                'category_id' => 'required|numeric',
+                'instructor_id'=>'required|numeric',
+
+                // 'tags' => 'nullable|array',
+                // 'tags.*' => 'exists:tags,id',
                 'image' => 'nullable|image|max:2048',
                 'video' => 'nullable|mimes:mp4,mov,ogg|max:102400',
                 'requirements' => 'nullable|array',
@@ -36,21 +37,18 @@ class CourseController extends Controller
                 'target_audience' => 'nullable|array',
                 'has_certificate' => 'boolean'
             ]);
+
             // Vérifier si les catégories existent et sont actives
-            $categories = Category::whereIn('id', $validated['categories'])
-            ->where('is_active', true)
-            ->get();
-
-
-            if ($categories->count() !== count($validated['categories'])) {
-                return response()->json([
-                    'message' => 'Certaines catégories n\'existent pas ou ne sont pas actives'
-                ], 400);
+            $category = Category::find($validated['category_id']);
+            if (!$category || !$category->is_active) {
+                return response()->json(['message' => 'La catégorie spécifiée n\'existe pas ou n\'est pas active'], 404);
             }
 
+            $validated['slug'] = Str::slug($validated['title']);
+
+    
+
             $course = new Course($validated);
-            $course->instructor_id = Auth::id();
-            $course->slug = Str::slug($validated['title']);
             $course->status = 'DRAFT';
 
             if ($request->hasFile('image')) {
@@ -64,10 +62,7 @@ class CourseController extends Controller
             $course->save();
 
             // Attacher les catégories et les tags
-            $course->categories()->attach($validated['categories']);
-            if (isset($validated['tags'])) {
-                $course->tags()->attach($validated['tags']);
-            }
+
 
             return response()->json([
                 'message' => 'Cours créé avec succès',
@@ -84,10 +79,22 @@ class CourseController extends Controller
 
     public function index(): JsonResponse
     {
-        $courses = Course::with(['categories', 'tags', 'instructor'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(12);
+        // Récupérer les cours avec toutes leurs relations
+        $courses = Course::with([
+            'categories',
+            'tags',
+            'instructor',
+            'sections' => function ($query) {
+                $query->orderBy('order')
+                      ->with(['lessons' => function ($query) {
+                          $query->orderBy('order');
+                      }]);
+            }
+        ])
+        ->orderBy('created_at', 'desc')
+        ->paginate(12);
 
+        // Récupérer les catégories et tags (pour filtres)
         $categories = Category::where('is_active', true)
             ->orderBy('display_order')
             ->get();
@@ -97,12 +104,37 @@ class CourseController extends Controller
             ->get();
 
         return response()->json([
-            'data' => [
-                'courses' => $courses,
-                'categories' => $categories,
-                'tags' => $tags
-            ],
+            'courses' => $courses, // Retourne toute la pagination avec relations
+            'categories' => $categories,
+            'tags' => $tags,
             'message' => 'Données récupérées avec succès'
         ]);
     }
+
+    public function show($id): JsonResponse
+{
+    try {
+        $course = Course::with([
+            'categories',
+            'tags',
+            'instructor',
+            'sections' => function ($query) {
+                $query->orderBy('order')
+                      ->with(['lessons' => function ($query) {
+                          $query->orderBy('order');
+                      }]);
+            }
+        ])->findOrFail($id);
+
+        return response()->json([
+            'data' => $course,
+            'message' => 'Course retrieved successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Course not found',
+            'error' => $e->getMessage()
+        ], 404);
+    }
+}
 }

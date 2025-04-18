@@ -29,11 +29,7 @@ class Setting extends Model
         'mobile_notifications' => true,
         'language' => 'fr',
         'timezone' => 'Europe/Paris',
-        'privacy_settings' => [
-            'profile_visibility' => 'public',
-            'course_progress' => 'public',
-            'show_email' => false
-        ]
+        'privacy_settings' => '{"profile_visibility":"public","course_progress":"public","show_email":false}'
     ];
 
     public function user(): BelongsTo
