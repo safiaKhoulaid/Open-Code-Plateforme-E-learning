@@ -18,16 +18,37 @@ class TagController extends Controller
     }
 
     public function store(Request $request)
-    {
+{
+    try {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:tags,name'
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
         ]);
 
-        Tag::create($validated);
+        // Vérifie si un tag avec ce nom existe déjà
+        $existingTag = Tag::where('name', $validated['name'])->first();
 
-        return redirect()->route('tags.index')
-            ->with('success', 'Tag créé avec succès.');
+        if ($existingTag) {
+            return response()->json([
+                'tag' => $existingTag,
+                'message' => 'Tag déjà existant.'
+            ], 200);
+        }
+
+        // Sinon, on le crée
+        $tag = Tag::create($validated);
+
+        return response()->json([
+            'tag' => $tag,
+            'message' => 'Tag créé avec succès.'
+        ], 201);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     public function show(Tag $tag)
     {
@@ -147,3 +168,4 @@ class TagController extends Controller
             ->with('success', 'Tags fusionnés avec succès.');
     }
 }
+
