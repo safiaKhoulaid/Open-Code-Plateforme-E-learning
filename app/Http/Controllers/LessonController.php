@@ -31,38 +31,37 @@ class LessonController extends Controller
      */
     public function store(Request $request, Course $course, Section $section)
     {
+        try {
+            // Afficher les données reçues
+           
+
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'order' => 'required|integer|min:0',
+                'content_type' => 'required|string|in:video,document,quiz,pdf',
+                'content_url' => 'required',
+                'duration' => 'required|integer|min:0',
+                'is_free' => 'boolean',
+                'is_published' => 'boolean'
+            ]);
 
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'order' => 'required|integer|min:0',
-            'content_type' => 'required|string|in:video,document,quiz,pdf',
-            'content_url' => 'required_if:content_type,video|nullable|file',
-            'duration' => 'required|integer|min:0',
-            'is_free' => 'boolean',
-            'is_published' => 'boolean'
-        ]);
+            if ($request->hasFile('content_url')) {
+                $validated['content_url'] = $request->file('content_url')->store('lessons/content', 'public');
+            } else {
+                return response()->json(['message' => 'Le fichier est requis'], 422);
+            }
 
-        if ($request->hasFile('content_file')) {
-            $validated['content_url'] = $request->file('content_file')->store('lessons/content', 'public');
+            $lesson = $section->lessons()->create($validated);
+
+            return response()->json($lesson, 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la création de la leçon', 'error' => $e->getMessage()], 500);
         }
-
-        $lesson = $section->lessons()->create($validated);
-
-        return response()->json($lesson, 200, ['Access-Control-Allow-Origin' => '*']);
     }
 
-    /**
-     * Display the specified r
-    public function show(Lesson $lesson)
-    {
-        //
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Lesson $lesson)
     {
         //
