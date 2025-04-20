@@ -9,8 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\JsonResponse;
-
-
+use App\Models\Section;
 
 class CourseController extends Controller
 {
@@ -26,8 +25,8 @@ class CourseController extends Controller
                 'price' => 'required|numeric|min:0',
                 'discount' => 'nullable|numeric|min:0',
                 'category_id' => 'required|numeric',
-                'instructor_id'=>'required|numeric',
-
+                'instructor_id' => 'required|numeric',
+                'content_url' => 'nullable|file|mimes:pdf,mp4,mov,ogg|max:102400',
                 // 'tags' => 'nullable|array',
                 // 'tags.*' => 'exists:tags,id',
                 'image' => 'nullable|image|max:2048',
@@ -46,8 +45,6 @@ class CourseController extends Controller
 
             $validated['slug'] = Str::slug($validated['title']);
 
-    
-
             $course = new Course($validated);
             $course->status = 'DRAFT';
 
@@ -59,10 +56,13 @@ class CourseController extends Controller
                 $course->video_url = $request->file('video')->store('courses/videos', 'public');
             }
 
+            if ($request->hasFile('content_url')) {
+                $course->content_url = $request->file('content_url')->store('courses/content', 'public');
+            }
+
             $course->save();
 
             // Attacher les catégories et les tags
-
 
             return response()->json([
                 'message' => 'Cours créé avec succès',
@@ -75,7 +75,6 @@ class CourseController extends Controller
             ], 500);
         }
     }
-
 
     public function index(): JsonResponse
     {
@@ -112,29 +111,67 @@ class CourseController extends Controller
     }
 
     public function show($id): JsonResponse
-{
-    try {
-        $course = Course::with([
-            'categories',
-            'tags',
-            'instructor',
-            'sections' => function ($query) {
-                $query->orderBy('order')
-                      ->with(['lessons' => function ($query) {
-                          $query->orderBy('order');
-                      }]);
-            }
-        ])->findOrFail($id);
+    {
+        try {
+            $course = Course::with([
+                'categories',
+                'tags',
+                'instructor',
+                'sections' => function ($query) {
+                    $query->orderBy('order')
+                          ->with(['lessons' => function ($query) {
+                              $query->orderBy('order');
+                          }]);
+                }
+            ])->findOrFail($id);
 
-        return response()->json([
-            'data' => $course,
-            'message' => 'Course retrieved successfully'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Course not found',
-            'error' => $e->getMessage()
-        ], 404);
+            return response()->json([
+                'data' => $course,
+                'message' => 'Course retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Course not found',
+                'error' => $e->getMessage()
+            ], 404);
+        }
     }
-}
+
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $course = Course::findOrFail($id);
+            $course->delete();
+
+            return response()->json([
+                'message' => 'Course deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Course not found',
+                'error' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    public function storeLesson(Request $request, Course $course, Section $section)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'content_type' => 'required|string',
+            'duration' => 'required|integer|min:0',
+            'order' => 'required|integer|min:0',
+            'content_url' => 'nullable|file|mimes:pdf,mp4,mov,ogg|max:102400'
+        ]);
+
+        $lesson = $section->lessons()->create($validated);
+
+        if ($request->hasFile('content_url')) {
+            $lesson->content_url = $request->file('content_url')->store('lessons/content', 'public');
+            $lesson->save();
+        }
+
+        return response()->json($lesson, 201);
+    }
 }
