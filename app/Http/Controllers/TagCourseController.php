@@ -10,28 +10,51 @@ use Illuminate\Support\Facades\DB;
 
 class TagCourseController extends Controller
 {
-    public function attachTagsToCourse($tagId, $courseId)
+    public function attachTagsToCourse($courseId ,$tagId)
     {
+       
         try {
-            $course = Course::findOrFail($courseId);
-            $tag = Tag::findOrFail($tagId);
-            if($course && $tag) {
+            // Vérifier si le cours existe
+            $course = Course::find($courseId);
+            if (!$course) {
+                return response()->json([
+                    'message' => 'Cours non trouvé'
+                ], 404);
+            }
 
+            // Vérifier si le tag existe
+            $tag = Tag::find($tagId);
+            if (!$tag) {
+                return response()->json([
+                    'message' => 'Tag non trouvé'
+                ], 404);
+            }
 
-            $tagCourse = TagCourse::create([
-                'tag_id' => $tagId,
+            // Vérifier si la relation existe déjà
+            $existingRelation = TagCourse::where('course_id', $courseId)
+                ->where('tag_id', $tagId)
+                ->first();
+
+            if ($existingRelation) {
+                return response()->json([
+                    'message' => 'Ce tag est déjà attaché à ce cours'
+                ], 409);
+            }
+
+            // Créer la nouvelle relation
+            TagCourse::create([
                 'course_id' => $courseId,
+                'tag_id' => $tagId
             ]);
 
             return response()->json([
-                'message' => 'Tags attachés avec succès',
-
+                'message' => 'Tag attaché avec succès',
+                'course' => $course->load('tags')
             ], 200);
-        }
+
         } catch (\Exception $e) {
-            DB::rollBack();
             return response()->json([
-                'message' => 'Erreur lors de l\'attachement des tags',
+                'message' => 'Erreur lors de l\'attachement du tag',
                 'error' => $e->getMessage()
             ], 500);
         }
