@@ -3,10 +3,12 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\TagController;
 use App\Http\Controllers\testController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LessonController;
+use App\Http\Controllers\uploadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\StudentController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TagCourseController;
 use App\Http\Controllers\DashboardStudentController;
 
 Route::get('/users', function (Request $request) {
@@ -27,7 +30,7 @@ Route::post('/register',[AuthController::class,'register']);
 Route::post('/login',[AuthController::class,'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
-
+Route::post('/upload' ,[uploadController::class , 'upload']);
 
 Route::middleware('auth:sanctum')->group(function()
 {
@@ -51,8 +54,9 @@ Route::middleware(['role:teacher'])->prefix('teacher')->group(function () {
 });
 
 // Routes pour les administrateurs
-Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+Route::middleware(['role:admin' || 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard']);
+    Route::delete('/courses/{id}',[courseController::class, 'destroy']);
 
 });
 Route::post('/categories', [CategoryController::class, 'store']);
@@ -103,3 +107,12 @@ Route::post('/courses/{course}/sections/{section}/lessons/reorder', [LessonContr
 Route::patch('/courses/{course}/sections/{section}/lessons/{lesson}/toggle-publish', [LessonController::class, 'togglePublish']);
 
 Route::get('/test ', [testController::class , 'index']);
+
+// ====== route des tags =======
+Route::post('/courses/{course}/tags',[TagController::class , 'store']);
+
+// Routes pour la gestion des tags et cours
+Route::post('/courses/{course}/tags/{tag}', [TagCourseController::class, 'attachTagsToCourse']);
+// Route::delete('/courses/{course}/tags', [TagCourseController::class, 'detachTagsFromCourse']);
+// Route::put('/courses/{course}/tags', [TagCourseController::class, 'syncTagsForCourse']);
+// Route::get('/courses/{course}/tags', [TagCourseController::class, 'getCourseTags']);
