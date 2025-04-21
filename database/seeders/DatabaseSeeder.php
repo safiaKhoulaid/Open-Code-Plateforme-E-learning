@@ -11,6 +11,7 @@ use App\Models\Section;
 use App\Models\Category;
 use App\Models\Enrollment;
 use App\Models\Certificate;
+use App\Models\Resource;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -20,15 +21,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-
-
+        // Créer d'abord les leçons nécessaires
+        Lesson::factory(10)->create();
+        // Puis créer les ressources
+        Resource::factory(100)->create();
         // Category::factory(2)->create();
         // Créer quelques utilisateurs
         // User::factory(10)->create();
         // Tag::factory(10)->create();
         // Course::factory(10)->create();
         // Section::factory(10)->create();
-        // Lesson::factory(10)->create();
         // Enrollment::factory(10)->create();
         // Certificate::factory(10)->create([
         //     'user_id' => 303,

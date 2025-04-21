@@ -25,7 +25,7 @@ class ShoppingCartController extends Controller
             ]);
         }
 
-        return view('cart.index', compact('cart'));
+        return response()->json([$cart]);
     }
 
     public function add(Request $request, Course $course)
