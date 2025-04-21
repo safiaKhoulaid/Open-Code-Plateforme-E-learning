@@ -22,7 +22,7 @@ class TagController extends Controller
     try {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'string',
         ]);
 
         // Vérifie si un tag avec ce nom existe déjà
