@@ -2,17 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\teacher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class TeacherController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($id)
     {
-        //
+        $user=User::find($id);
+        if($user && $user->role !== "teacher")
+        {
+         return response()->json('le utilisateur n estpas un teacher');
+        }
+        $courses = DB::table("courses")->where('instructor_id', $id)->get();
+        $students = DB:: table('users as u')
+        ->join('enrollments as en','u.id','=','student_id')
+        ->join('courses as c','c.id' ,"=","en.course_id")
+        ->where('c.instructor_id','=',$id)
+        ->get();
+
+        return response()->json(['courses'=>$courses,'student'=>$students]);
     }
 
     /**
