@@ -116,3 +116,6 @@ Route::post('/courses/{course}/tags/{tag}', [TagCourseController::class, 'attach
 // Route::delete('/courses/{course}/tags', [TagCourseController::class, 'detachTagsFromCourse']);
 // Route::put('/courses/{course}/tags', [TagCourseController::class, 'syncTagsForCourse']);
 // Route::get('/courses/{course}/tags', [TagCourseController::class, 'getCourseTags']);
+
+//=====route pour dashboard de teacher
+Route::get('/dashboard-teacher/{id}',[TeacherController::class ,'index']);
