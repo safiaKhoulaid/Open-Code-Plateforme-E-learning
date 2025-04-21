@@ -37,12 +37,25 @@ class DashboardStudentController extends Controller
             ->get();
         Log::info('Nombre de cours trouvés: ' . $courses->count());
 
+        $totalLessons = 0;
+        $completedLessons = 0;
+        foreach ($courses as $course) {
+            foreach ($course->enrollments as $enrollment) {
+                if ($enrollment->student_id == $userId) {
+                    $totalLessons += $course->sections()->sum('lessons_count');
+                    $completedLessons += $enrollment->completed_lessons_count;
+                }
+            }
+        }
+        $progress = $totalLessons > 0 ? ($completedLessons / $totalLessons) * 100 : 0;
+     
         $response = [
             'data' => [
                 'profile' => $profile,
                 'settings' => $settings,
                 'certificates' => $certificates,
                 'courses' => $courses,
+                'progress' => $progress
             ],
             'message' => 'Données du tableau de bord récupérées avec succès'
         ];
