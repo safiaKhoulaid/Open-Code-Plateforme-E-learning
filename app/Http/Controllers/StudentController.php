@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -12,7 +13,17 @@ class StudentController extends Controller
      */
     public function index()
     {
-        //
+        $id = auth()->user()->id();
+        $coursesEnroller = DB::table('enrollments')->join('courses', 'courses.id', '=', 'enrollments.course_id')
+            ->where('enrollments.user_id', $id)
+            ->select('courses.*')
+            ->get();
+        $coursesCompleted = DB::table('enrollments')->join('courses', 'courses.id', '=', 'enrollments.course_id');
+        return response()->json([
+            'coursesEnrolled' => $coursesEnroller,
+            'coursesCompleted' => $coursesCompleted
+        ]);
+            
     }
 
     /**
