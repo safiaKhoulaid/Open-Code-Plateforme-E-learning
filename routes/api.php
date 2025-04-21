@@ -45,6 +45,7 @@ Route::delete('/profile/{user_id}',[ProfileController::class , 'destroy']);
 Route::get('/user',[AuthController::class , 'getUser']);
 Route::middleware(['role:student'])->prefix('student')->group(function () {
     Route::get('/dashboard', [StudentController::class, 'dashboard']);
+    Route::get('/dashboard-student', [DashboardStudentController::class, 'index']);
 });
 
 // Routes pour les enseignants
@@ -116,6 +117,16 @@ Route::post('/courses/{course}/tags/{tag}', [TagCourseController::class, 'attach
 // Route::delete('/courses/{course}/tags', [TagCourseController::class, 'detachTagsFromCourse']);
 // Route::put('/courses/{course}/tags', [TagCourseController::class, 'syncTagsForCourse']);
 // Route::get('/courses/{course}/tags', [TagCourseController::class, 'getCourseTags']);
+
+// Routes pour Stripe et les paiements de cours
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/courses/{course}/checkout', [App\Http\Controllers\StripeController::class, 'createCheckoutSession']);
+    Route::get('/stripe/success', [App\Http\Controllers\StripeController::class, 'success'])->name('stripe.success');
+    Route::get('/stripe/cancel', [App\Http\Controllers\StripeController::class, 'cancel'])->name('stripe.cancel');
+});
+
+// Route pour le webhook Stripe (pas besoin d'authentification)
+Route::post('/stripe/webhook', [App\Http\Controllers\StripeController::class, 'webhook']);
 
 //=====route pour dashboard de teacher
 Route::get('/dashboard-teacher/{id}',[TeacherController::class ,'index']);
