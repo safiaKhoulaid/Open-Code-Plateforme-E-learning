@@ -24,7 +24,7 @@ class WishlistController extends Controller
 
 
     $userId = $validated['user_id'];
-    
+
     // Vérifier si l'utilisateur existe
     $user = User::find($userId);
 
@@ -152,16 +152,17 @@ catch(\Illuminate\Database\QueryException $e){
     /**
      * Remove the specified wishlist item from storage.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request ,string $ide): JsonResponse
     {
-        $user = Auth::user();
+        $id = $request->input('user_id');
 
-        if (!$user) {
+        $user = User::findOrFail($id);
+                if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $wishlistItem = Wishlist::where('user_id', $user->id)
-            ->where('id', $id)
+        $wishlistItem = Wishlist::where('user_id', $id)
+            ->where('id', $ide)
             ->first();
 
         if (!$wishlistItem) {
