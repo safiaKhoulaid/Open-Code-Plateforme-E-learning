@@ -12,6 +12,7 @@ use App\Models\Category;
 use App\Models\Enrollment;
 use App\Models\Certificate;
 use App\Models\Resource;
+use App\Models\Wishlist;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -21,10 +22,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Créer d'abord les leçons nécessaires
-        Lesson::factory(10)->create();
+        Wishlist::factory(10)->create([
+            'user_id' => 6,
+        ]);
+        // // Créer d'abord les leçons nécessaires
+        // Lesson::factory(10)->create();
         // Puis créer les ressources
-        Resource::factory(100)->create();
+        // Resource::factory(100)->create();
         // Category::factory(2)->create();
         // Créer quelques utilisateurs
         // User::factory(10)->create();
