@@ -18,6 +18,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TagCourseController;
 use App\Http\Controllers\DashboardStudentController;
+use App\Http\Controllers\WishlistController;
 
 Route::get('/users', function (Request $request) {
    $users = DB::table('users')
@@ -130,3 +131,14 @@ Route::post('/stripe/webhook', [App\Http\Controllers\StripeController::class, 'w
 
 //=====route pour dashboard de teacher
 Route::get('/dashboard-teacher/{id}',[TeacherController::class ,'index']);
+
+ //======= Wishlist routes==========
+ Route::get('/wishlist', [WishlistController::class, 'index']);
+ Route::post('/wishlist', [WishlistController::class, 'store']);
+ Route::get('/wishlist/{id}', [WishlistController::class, 'show']);
+ Route::put('/wishlist/{id}', [WishlistController::class, 'update']);
+ Route::delete('/wishlist/{id}', [WishlistController::class, 'destroy']);
+ Route::post('/wishlist/toggle', [WishlistController::class, 'toggle']);
+ Route::patch('/wishlist/{id}/notifications', [WishlistController::class, 'toggleNotifications']);
+ Route::delete('/wishlist', [WishlistController::class, 'clear']);
+ Route::get('/wishlist/check/{courseId}', [WishlistController::class, 'check']);
