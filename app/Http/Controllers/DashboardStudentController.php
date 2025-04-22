@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\Profile;
 use App\Models\Setting;
 use App\Models\Certificate;
+use App\Models\Wishlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -48,14 +49,17 @@ class DashboardStudentController extends Controller
             }
         }
         $progress = $totalLessons > 0 ? ($completedLessons / $totalLessons) * 100 : 0;
-     
+        $wishlists = Wishlist::with('course')
+        ->where('user_id', $userId)
+        ->get();
         $response = [
             'data' => [
                 'profile' => $profile,
                 'settings' => $settings,
                 'certificates' => $certificates,
                 'courses' => $courses,
-                'progress' => $progress
+               ' progress'=>$progress,
+                'wishlists' => $wishlists
             ],
             'message' => 'Données du tableau de bord récupérées avec succès'
         ];
