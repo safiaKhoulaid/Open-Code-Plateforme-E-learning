@@ -10,7 +10,7 @@ class UploadController extends Controller
 {
     public function upload(Request $request)
     {
-        
+
         try {
             // Vérifier si un fichier est présent
             if (!$request->hasFile('file')) {
@@ -22,7 +22,7 @@ class UploadController extends Controller
 
             $request->validate([
                 'file' => 'required|file|mimes:pdf,mp4,mov,ogg,doc,docx,jpg,jpeg,png|max:102400',
-                'type' => 'required|string|in:lesson,profile,course'
+                'type' => 'nullable'
             ]);
 
             $file = $request->file('file');

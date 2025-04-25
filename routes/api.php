@@ -142,3 +142,4 @@ Route::get('/dashboard-teacher/{id}',[TeacherController::class ,'index']);
  Route::patch('/wishlist/{id}/notifications', [WishlistController::class, 'toggleNotifications']);
  Route::delete('/wishlist', [WishlistController::class, 'clear']);
  Route::get('/wishlist/check/{courseId}', [WishlistController::class, 'check']);
+ 

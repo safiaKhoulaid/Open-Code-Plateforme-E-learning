@@ -26,8 +26,9 @@ class TeacherController extends Controller
         ->join('courses as c','c.id' ,"=","en.course_id")
         ->where('c.instructor_id','=',$id)
         ->get();
+        $profile = DB::table('profiles')->where('user_id',$id)->get();
 
-        return response()->json(['courses'=>$courses,'student'=>$students]);
+        return response()->json(['courses'=>$courses,'student'=>$students,'profile'=>$profile]);
     }
 
     /**

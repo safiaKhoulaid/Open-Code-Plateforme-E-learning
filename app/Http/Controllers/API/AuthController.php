@@ -29,7 +29,7 @@ class AuthController extends Controller
                 'role' => 'required|string|in:admin,student,teacher'
             ]);
 
-            $isApproved = ($validated['role'] == 'student');
+            $isApproved = $validated['role'] == 'student';
 
             $user = User::create([
                 'firstName' => $validated['firstName'],
@@ -42,7 +42,10 @@ class AuthController extends Controller
             ]);
             $profile = Profile::create([
                 'user_id' => $user->id,
-               
+              'name' => "{$user->firstName} {$user->lastName}",
+
+
+
 
             ]);
             $setting = Setting::create([
