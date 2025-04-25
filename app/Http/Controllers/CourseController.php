@@ -26,7 +26,7 @@ class CourseController extends Controller
                 'discount' => 'nullable|numeric|min:0',
                 'category_id' => 'required|numeric',
                 'instructor_id' => 'required|numeric',
-                'content_url' => 'nullable|file|mimes:pdf,mp4,mov,ogg|max:102400',
+                'content_url' => 'nullable|string',  // Changed to just string
                 // 'tags' => 'nullable|array',
                 // 'tags.*' => 'exists:tags,id',
                 'image' => 'nullable|image|max:2048',
@@ -56,8 +56,9 @@ class CourseController extends Controller
                 $course->video_url = $request->file('video')->store('courses/videos', 'public');
             }
 
-            if ($request->hasFile('content_url')) {
-                $course->content_url = $request->file('content_url')->store('courses/content', 'public');
+            // Accept content_url as a string path instead of file upload
+            if ($request->has('content_url')) {
+                $course->content_url = $request->input('content_url');
             }
 
             $course->save();
