@@ -177,4 +177,11 @@ class ShoppingCartController extends Controller
             'last_updated' => now()
         ]);
     }
+
+    public function addCheckout(Request $request,$courseId){
+        $validated = $request->validate([
+            'user_id'=>'required|numeric',
+            
+        ]);
+    }
 }
