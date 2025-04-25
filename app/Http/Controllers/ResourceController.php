@@ -13,7 +13,7 @@ class ResourceController extends Controller
 {
     public function store(Request $request, Course $course, Section $section, Lesson $lesson)
     {
-        $this->authorize('update', $course);
+      
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
