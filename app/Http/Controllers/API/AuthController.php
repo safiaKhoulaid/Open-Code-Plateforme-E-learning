@@ -42,8 +42,9 @@ class AuthController extends Controller
             ]);
             $profile = Profile::create([
                 'user_id' => $user->id,
-              'name' => "{$user->firstName} {$user->lastName}",
-
+              'firstName' => $user->firstName,
+              'lastName' => $user->lastName,
+            
 
 
 
