@@ -6,6 +6,8 @@ use App\Models\Payment;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Stripe\Stripe;
+use Stripe\Checkout\Session;
 
 class PaymentController extends Controller
 {
@@ -24,7 +26,7 @@ class PaymentController extends Controller
         $this->authorize('view', $payment);
 
         $order = $payment->order;
-        $course = $order->items->first()->course;
+        $courses = $order->items->pluck('course');
 
         // Mettre à jour le paiement
         $payment->update([
@@ -38,29 +40,40 @@ class PaymentController extends Controller
             'status' => 'COMPLETED'
         ]);
 
-        // Créer l'inscription
-        DB::transaction(function () use ($order, $course) {
-            $enrollment = $order->user->enrolledCourses()->attach($course->id, [
-                'enrollment_date' => now(),
-                'price' => $course->price,
-                'payment_id' => $order->payment->id,
-                'status' => 'ACTIVE'
-            ]);
+        $enrolledCourses = [];
 
-            // Créer un certificat si le cours en propose un
-            if ($course->has_certificate) {
-                $course->certificates()->create([
-                    'user_id' => $order->user_id,
-                    'issue_date' => now(),
-                    'title' => $course->title,
-                    'instructor_name' => $course->instructor->name,
-                    'student_name' => $order->user->name,
-                    'course_title' => $course->title
+        // Créer l'inscription et la facture
+        DB::transaction(function () use ($order, $courses, &$invoice, &$enrolledCourses) {
+            foreach ($courses as $course) {
+                // Créer l'inscription pour chaque cours
+                $order->user->enrolledCourses()->attach($course->id, [
+                    'enrollment_date' => now(),
+                    'price' => $course->price,
+                    'payment_id' => $order->payment->id,
+                    'status' => 'ACTIVE'
                 ]);
+
+                // Créer un certificat si le cours en propose un
+                if ($course->has_certificate) {
+                    $certificate = $course->certificates()->create([
+                        'user_id' => $order->user_id,
+                        'issue_date' => now(),
+                        'title' => $course->title,
+                        'instructor_name' => $course->instructor->name,
+                        'student_name' => $order->user->name,
+                        'course_title' => $course->title
+                    ]);
+                }
+
+                $enrolledCourses[] = [
+                    'id' => $course->id,
+                    'title' => $course->title,
+                    'status' => 'ENROLLED'
+                ];
             }
 
-            // Créer une facture
-            $order->invoice()->create([
+            // Créer une facture unique pour tous les cours
+            $invoice = $order->invoice()->create([
                 'user_id' => $order->user_id,
                 'total_amount' => $order->total_amount,
                 'tax_amount' => $order->tax,
@@ -73,8 +86,27 @@ class PaymentController extends Controller
             ]);
         });
 
-        return redirect()->route('courses.show', $course)
-            ->with('success', 'Paiement réussi. Vous êtes maintenant inscrit au cours.');
+        // Générer l'URL de la facture
+        $invoiceUrl = route('invoice.download', ['invoice' => $invoice->id]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Paiement traité avec succès',
+            'data' => [
+                'courses' => $enrolledCourses,
+                'payment' => [
+                    'id' => $payment->id,
+                    'status' => $payment->status,
+                    'amount' => $payment->amount,
+                    'invoice_url' => $invoiceUrl
+                ],
+                'enrollment' => [
+                    'status' => 'ACTIVE',
+                    'date' => now()->format('Y-m-d H:i:s'),
+                    'total_courses' => count($enrolledCourses)
+                ]
+            ]
+        ], 200);
     }
 
     public function cancel(Payment $payment)
@@ -94,8 +126,7 @@ class PaymentController extends Controller
             'status' => 'CANCELLED'
         ]);
 
-        return redirect()->route('courses.show', $order->items->first()->course)
-            ->with('error', 'Le paiement a été annulé.');
+        return response()->json(['status' => 'success']);
     }
 
     public function webhook(Request $request)
@@ -180,6 +211,7 @@ class PaymentController extends Controller
                 'billing_address' => $order->billing_address
             ]);
         });
+        return response()->json(['status' => 'success']);
     }
 
     private function handleFailedPayment(Payment $payment)
@@ -232,5 +264,29 @@ class PaymentController extends Controller
     {
         // Implémenter la vérification de la signature selon le fournisseur de paiement
         return true;
+    }
+
+    public function checkout(Request $request)
+    {
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $session = Session::create([
+            'payment_method_types' => ['card'],
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => 'eur',
+                    'product_data' => [
+                        'name' => 'Nom du produit',
+                    ],
+                    'unit_amount' => 1000, // Montant en centimes (10,00 €)
+                ],
+                'quantity' => 1,
+            ]],
+            'mode' => 'payment',
+            'success_url' => route('success'),
+            'cancel_url' => route('cancel'),
+        ]);
+
+        return response()->json(['id' => $session->id]);
     }
 }
