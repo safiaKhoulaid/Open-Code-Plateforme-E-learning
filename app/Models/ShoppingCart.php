@@ -2,31 +2,36 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ShoppingCart extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
-        'coupon_code',
-        'subtotal',
-        'discount',
-        'tax',
-        'total',
-        'last_updated'
+        'course_id',
+        'quantity',
+        'price',
+        'created_at',
+        'updated_at'
     ];
 
-    protected $casts = [
-        'subtotal' => 'decimal:2',
-        'discount' => 'decimal:2',
-        'tax' => 'decimal:2',
-        'total' => 'decimal:2',
-        'last_updated' => 'datetime'
-    ];
+    /**
+     * Relation avec le cours
+     */
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
 
-    public function user(): BelongsTo
+    /**
+     * Relation avec l'utilisateur
+     */
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
