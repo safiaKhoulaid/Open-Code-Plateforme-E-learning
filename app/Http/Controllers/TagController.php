@@ -68,8 +68,7 @@ class TagController extends Controller
 
         $tag->update($validated);
 
-        return redirect()->route('tags.index')
-            ->with('success', 'Tag mis à jour avec succès.');
+        return response()->json(['message' => 'Tag mis à jour avec succès.']);
     }
 
     public function destroy(Tag $tag)
