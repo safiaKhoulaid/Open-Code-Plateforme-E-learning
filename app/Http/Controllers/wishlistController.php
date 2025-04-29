@@ -181,42 +181,50 @@ catch(\Illuminate\Database\QueryException $e){
      */
     public function toggle(Request $request): JsonResponse
     {
-        $user = Auth::user();
-
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-        ]);
-
-        $existingItem = Wishlist::where('user_id', $user->id)
-            ->where('course_id', $validated['course_id'])
-            ->first();
-
-        if ($existingItem) {
-            // Remove from wishlist
-            $existingItem->delete();
-
-            return response()->json([
-                'message' => 'Course removed from wishlist',
-                'in_wishlist' => false,
-            ]);
-        } else {
-            // Add to wishlist
-            $wishlistItem = Wishlist::create([
-                'user_id' => $user->id,
-                'course_id' => $validated['course_id'],
-                'has_notifications' => true,
-                'added_at' => now(),
+        try {
+            $validated = $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'course_id' => 'required|exists:courses,id',
             ]);
 
+            $user = User::find($validated['user_id']);
+
+            if (!$user) {
+                return response()->json(['message' => 'Utilisateur non trouvé'], 404);
+            }
+
+            $existingItem = Wishlist::where('user_id', $user->id)
+                ->where('course_id', $validated['course_id'])
+                ->first();
+
+            if ($existingItem) {
+                // Supprimer de la liste de souhaits
+                $existingItem->delete();
+
+                return response()->json([
+                    'message' => 'Cours retiré de la liste de souhaits',
+                    'in_wishlist' => false,
+                ]);
+            } else {
+                // Ajouter à la liste de souhaits
+                $wishlistItem = Wishlist::create([
+                    'user_id' => $user->id,
+                    'course_id' => $validated['course_id'],
+                    'has_notifications' => true,
+                    'added_at' => now(),
+                ]);
+
+                return response()->json([
+                    'message' => 'Cours ajouté à la liste de souhaits',
+                    'in_wishlist' => true,
+                    'wishlist_item' => $wishlistItem,
+                ], 201);
+            }
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Course added to wishlist',
-                'in_wishlist' => true,
-                'wishlist_item' => $wishlistItem,
-            ], 201);
+                'message' => 'Une erreur est survenue',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
