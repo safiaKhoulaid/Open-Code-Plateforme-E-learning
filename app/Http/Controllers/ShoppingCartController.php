@@ -2,186 +2,238 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Course;
 use App\Models\ShoppingCart;
-use App\Models\CartItem;
-use App\Models\Order;
-use App\Models\Payment;
+use App\Models\Course;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Exception;
 
 class ShoppingCartController extends Controller
 {
+    /**
+     * Afficher le panier de l'utilisateur
+     */
     public function index()
     {
-        $cart = auth()->user()->shoppingCart()->with('items.course')->first();
-        if (!$cart) {
-            $cart = auth()->user()->shoppingCart()->create([
-                'subtotal' => 0,
-                'discount' => 0,
-                'tax' => 0,
-                'total' => 0,
-                'last_updated' => now()
+        try {
+            $cartItems = ShoppingCart::with('course')
+                ->where('user_id', Auth::id())
+                ->get();
+
+            $total = $cartItems->sum(function ($item) {
+                $price = $item->course->price;
+                $discount = $item->course->discount ?? 0;
+                return ($price - $discount) * $item->quantity;
+            });
+
+            return response()->json([
+                'items' => $cartItems,
+                'total' => $total,
+                'count' => $cartItems->sum('quantity')
             ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du panier',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([$cart]);
     }
 
-    public function add(Request $request, Course $course)
+    /**
+     * Ajouter un cours au panier
+     */
+    public function addToCart(Request $request)
     {
-        $cart = auth()->user()->shoppingCart()->first();
-        if (!$cart) {
-            $cart = auth()->user()->shoppingCart()->create([
-                'subtotal' => 0,
-                'discount' => 0,
-                'tax' => 0,
-                'total' => 0,
-                'last_updated' => now()
+        try {
+            $validated = $request->validate([
+                'course_id' => 'required|exists:courses,id',
+                'quantity' => 'integer|min:1|nullable'
             ]);
-        }
 
-        // Vérifier si le cours est déjà dans le panier
-        if ($cart->items()->where('course_id', $course->id)->exists()) {
-            return back()->with('error', 'Ce cours est déjà dans votre panier.');
-        }
+            $course = Course::findOrFail($validated['course_id']);
 
-        // Vérifier si l'utilisateur est déjà inscrit au cours
-        if (auth()->user()->enrolledCourses()->where('course_id', $course->id)->exists()) {
-            return back()->with('error', 'Vous êtes déjà inscrit à ce cours.');
-        }
+            // Vérifier si le cours est déjà dans le panier
+            $cartItem = ShoppingCart::where('user_id', Auth::id())
+                ->where('course_id', $validated['course_id'])
+                ->first();
 
-        // Ajouter le cours au panier
-        $cart->items()->create([
-            'course_id' => $course->id,
-            'price' => $course->price,
-            'discount' => $course->discount ?? 0,
-            'added_date' => now()
-        ]);
-
-        $this->updateCartTotals($cart);
-
-        return back()->with('success', 'Cours ajouté au panier avec succès.');
-    }
-
-    public function remove(Course $course)
-    {
-        $cart = auth()->user()->shoppingCart()->first();
-        if (!$cart) {
-            return back()->with('error', 'Votre panier est vide.');
-        }
-
-        $cart->items()->where('course_id', $course->id)->delete();
-        $this->updateCartTotals($cart);
-
-        return back()->with('success', 'Cours retiré du panier avec succès.');
-    }
-
-    public function update(Request $request)
-    {
-        $cart = auth()->user()->shoppingCart()->first();
-        if (!$cart) {
-            return back()->with('error', 'Votre panier est vide.');
-        }
-
-        $validated = $request->validate([
-            'coupon_code' => 'nullable|string|exists:coupons,code'
-        ]);
-
-        if ($request->has('coupon_code')) {
-            $coupon = Coupon::where('code', $validated['coupon_code'])->first();
-            if ($coupon->isValid()) {
-                $cart->update([
-                    'coupon_code' => $coupon->code,
-                    'discount' => $coupon->calculateDiscount($cart->subtotal)
+            if ($cartItem) {
+                // Mettre à jour la quantité
+                $cartItem->quantity += $validated['quantity'] ?? 1;
+                $cartItem->save();
+            } else {
+                // Créer un nouvel élément
+                $cartItem = ShoppingCart::create([
+                    'user_id' => Auth::id(),
+                    'course_id' => $validated['course_id'],
+                    'quantity' => $validated['quantity'] ?? 1,
+                    'price' => $course->price - ($course->discount ?? 0)
                 ]);
-                $this->updateCartTotals($cart);
-                return back()->with('success', 'Code promo appliqué avec succès.');
             }
-            return back()->with('error', 'Code promo invalide ou expiré.');
-        }
 
-        return back();
+            return response()->json([
+                'message' => 'Cours ajouté au panier avec succès',
+                'item' => $cartItem->load('course')
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de l\'ajout au panier',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function checkout(Request $request)
+    /**
+     * Mettre à jour la quantité d'un cours dans le panier
+     */
+    public function updateCart(Request $request)
     {
-        $cart = auth()->user()->shoppingCart()->with('items.course')->first();
-        if (!$cart || $cart->items->isEmpty()) {
-            return redirect()->route('cart.index')
-                ->with('error', 'Votre panier est vide.');
-        }
-
-        // Créer une commande
-        $order = Order::create([
-            'user_id' => auth()->id(),
-            'total_amount' => $cart->subtotal,
-            'discount' => $cart->discount,
-            'tax' => $cart->tax,
-            'final_amount' => $cart->total,
-            'payment_method' => $request->payment_method,
-            'status' => 'PENDING',
-            'created_date' => now(),
-            'billing_address' => $request->billing_address
-        ]);
-
-        // Créer les éléments de la commande
-        foreach ($cart->items as $item) {
-            $order->items()->create([
-                'course_id' => $item->course_id,
-                'price' => $item->price,
-                'discount' => $item->discount
+        try {
+            $validated = $request->validate([
+                'course_id' => 'required|exists:courses,id',
+                'quantity' => 'required|integer|min:1'
             ]);
+
+            $cartItem = ShoppingCart::where('user_id', Auth::id())
+                ->where('course_id', $validated['course_id'])
+                ->first();
+
+            if (!$cartItem) {
+                return response()->json([
+                    'message' => 'Cours non trouvé dans le panier'
+                ], 404);
+            }
+
+            $cartItem->quantity = $validated['quantity'];
+            $cartItem->save();
+
+            return response()->json([
+                'message' => 'Panier mis à jour avec succès',
+                'item' => $cartItem->load('course')
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la mise à jour du panier',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Créer un paiement
-        $payment = Payment::create([
-            'order_id' => $order->id,
-            'user_id' => auth()->id(),
-            'amount' => $order->final_amount,
-            'currency' => 'EUR',
-            'method' => $request->payment_method,
-            'status' => 'PENDING',
-            'transaction_id' => null,
-            'timestamp' => now(),
-            'billing_details' => $request->billing_address
-        ]);
-
-        // Vider le panier
-        $cart->items()->delete();
-        $cart->update([
-            'subtotal' => 0,
-            'discount' => 0,
-            'tax' => 0,
-            'total' => 0,
-            'coupon_code' => null,
-            'last_updated' => now()
-        ]);
-
-        return redirect()->route('payments.process', $payment);
     }
 
-    private function updateCartTotals(ShoppingCart $cart)
+    /**
+     * Supprimer un cours du panier
+     */
+    public function removeFromCart(Request $request)
     {
-        $subtotal = $cart->items->sum(function ($item) {
-            return $item->price - $item->discount;
-        });
+        try {
+            $validated = $request->validate([
+                'course_id' => 'required|exists:courses,id'
+            ]);
 
-        $tax = $subtotal * 0.20; // TVA 20%
-        $total = $subtotal + $tax - $cart->discount;
+            $deleted = ShoppingCart::where('user_id', Auth::id())
+                ->where('course_id', $validated['course_id'])
+                ->delete();
 
-        $cart->update([
-            'subtotal' => $subtotal,
-            'tax' => $tax,
-            'total' => $total,
-            'last_updated' => now()
-        ]);
+            if (!$deleted) {
+                return response()->json([
+                    'message' => 'Cours non trouvé dans le panier'
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Cours retiré du panier avec succès'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la suppression du panier',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function addCheckout(Request $request,$courseId){
-        $validated = $request->validate([
-            'user_id'=>'required|numeric',
-            
-        ]);
+    /**
+     * Vider le panier
+     */
+    public function clearCart()
+    {
+        try {
+            ShoppingCart::where('user_id', Auth::id())->delete();
+
+            return response()->json([
+                'message' => 'Panier vidé avec succès'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors du vidage du panier',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Vérifier si un cours est dans le panier
+     */
+    public function checkCourseInCart($courseId)
+    {
+        try {
+            $exists = ShoppingCart::where('user_id', Auth::id())
+                ->where('course_id', $courseId)
+                ->exists();
+
+            return response()->json([
+                'in_cart' => $exists
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la vérification du panier',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtenir le total du panier
+     */
+    public function getCartTotal()
+    {
+        try {
+            $cartItems = ShoppingCart::with('course')
+                ->where('user_id', Auth::id())
+                ->get();
+
+            $total = $cartItems->sum(function ($item) {
+                $price = $item->course->price;
+                $discount = $item->course->discount ?? 0;
+                return ($price - $discount) * $item->quantity;
+            });
+
+            return response()->json([
+                'total' => $total
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors du calcul du total',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtenir le nombre d'articles dans le panier
+     */
+    public function getCartCount()
+    {
+        try {
+            $count = ShoppingCart::where('user_id', Auth::id())
+                ->sum('quantity');
+
+            return response()->json([
+                'count' => $count
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors du comptage des articles',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
