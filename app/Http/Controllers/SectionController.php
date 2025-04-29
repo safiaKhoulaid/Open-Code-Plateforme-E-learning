@@ -29,7 +29,7 @@ class SectionController extends Controller
 
     public function update(Request $request, Course $course, Section $section)
     {
-        $this->authorize('update', $course);
+
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -40,7 +40,7 @@ class SectionController extends Controller
 
         $section->update($validated);
 
-        return back()->with('success', 'Section mise à jour avec succès.');
+        return response()->json(['message' => 'Section mise à jour avec succès.']);
     }
 
     public function destroy(Course $course, Section $section)
