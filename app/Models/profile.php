@@ -3,25 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class profile extends Model
+class Profile extends Model
 {
   protected $fillable = [
-  'firstName',
-  'lastName',
-  'profilePicture',
-  'biography',
-  'linkdebLink',
-  'instagramLink',
-  'discordLink',
-  'skills',
-  'user_id',
-
+    'firstName',
+    'lastName',
+    'profilePicture',
+    'biography',
+    'linkdebLink',
+    'instagramLink',
+    'discordLink',
+    'skills',
+    'user_id',
   ];
 
-  public function user (){
-    return $this->belongTo(User::class,'users');
-}
+  public function user(): BelongsTo
+  {
+    return $this->belongsTo(User::class);
+  }
 }
 
 
