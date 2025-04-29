@@ -7,6 +7,7 @@ use App\Models\Section;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class LessonController extends Controller
 {
@@ -32,32 +33,55 @@ class LessonController extends Controller
     public function store(Request $request, Course $course, Section $section)
     {
         try {
-            // Afficher les données reçues
-           
-
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'order' => 'required|integer|min:0',
                 'content_type' => 'required|string|in:video,document,quiz,pdf',
-                'content_url' => 'required',
+                'content_url' => 'required_if:content_type,video,pdf|string',
                 'duration' => 'required|integer|min:0',
                 'is_free' => 'boolean',
                 'is_published' => 'boolean'
             ]);
 
-
-            if ($request->hasFile('content_url')) {
-                $validated['content_url'] = $request->file('content_url')->store('lessons/content', 'public');
-            } else {
-                return response()->json(['message' => 'Le fichier est requis'], 422);
-            }
-
             $lesson = $section->lessons()->create($validated);
 
-            return response()->json($lesson, 201);
+            // Gérer l'upload du fichier si présent
+            if ($request->hasFile('content_url')) {
+                $file = $request->file('content_url');
+                $extension = $file->getClientOriginalExtension();
+                $filename = 'lesson_' . time() . '_' . Str::random(10) . '.' . $extension;
+
+                // Déterminer le dossier en fonction du type de contenu
+                if ($validated['content_type'] === 'video') {
+                    $folder = 'lessons/videos';
+                    // Vérifier que l'extension est bien une extension vidéo
+                    if (!in_array(strtolower($extension), ['mp4', 'mov', 'avi', 'webm'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Le fichier doit être une vidéo (mp4, mov, avi, webm)'
+                        ], 400);
+                    }
+                } else {
+                    $folder = 'lessons/documents';
+                }
+
+                $path = $file->storeAs($folder, $filename, 'public');
+                $lesson->content_url = Storage::url($path);
+                $lesson->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Leçon créée avec succès',
+                'data' => $lesson
+            ], 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erreur lors de la création de la leçon', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la création de la leçon',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -72,29 +96,56 @@ class LessonController extends Controller
      */
     public function update(Request $request, Course $course, Section $section, Lesson $lesson)
     {
-        $this->authorize('update', $course);
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'order' => 'required|integer|min:0',
+                'content_type' => 'required|string|in:video,document,quiz,pdf',
+                'content_url' => 'required_if:content_type,video,pdf|string',
+                'duration' => 'required|integer|min:0',
+                'is_free' => 'boolean',
+                'is_published' => 'boolean'
+            ]);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'order' => 'required|integer|min:0',
-            'content_type' => 'required|string|in:VIDEO,DOCUMENT,QUIZ',
-            'content_url' => 'required_if:content_type,VIDEO|nullable|url',
-            'duration' => 'required|integer|min:0',
-            'is_free' => 'boolean',
-            'is_published' => 'boolean'
-        ]);
+            // Gérer l'upload du fichier si présent
+            if ($request->hasFile('content_url')) {
+                $file = $request->file('content_url');
+                $extension = $file->getClientOriginalExtension();
+                $filename = 'lesson_' . time() . '_' . Str::random(10) . '.' . $extension;
 
-        if ($request->hasFile('content_file')) {
-            if ($lesson->content_url) {
-                Storage::disk('public')->delete($lesson->content_url);
+                // Déterminer le dossier en fonction du type de contenu
+                if ($validated['content_type'] === 'video') {
+                    $folder = 'lessons/videos';
+                    // Vérifier que l'extension est bien une extension vidéo
+                    if (!in_array(strtolower($extension), ['mp4', 'mov', 'avi', 'webm'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Le fichier doit être une vidéo (mp4, mov, avi, webm)'
+                        ], 400);
+                    }
+                } else {
+                    $folder = 'lessons/documents';
+                }
+
+                $path = $file->storeAs($folder, $filename, 'public');
+                $validated['content_url'] = Storage::url($path);
             }
-            $validated['content_url'] = $request->file('content_file')->store('lessons/content', 'public');
+
+            $lesson->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Leçon mise à jour avec succès',
+                'data' => $lesson
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de la leçon',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $lesson->update($validated);
-
-        return back()->with('success', 'Leçon mise à jour avec succès.');
     }
 
     /**
