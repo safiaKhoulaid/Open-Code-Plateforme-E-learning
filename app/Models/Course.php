@@ -14,16 +14,16 @@ class Course extends Model
     protected $fillable = [
         'title',
         'subtitle',
+        'slug',
         'description',
-        'instructor_id',
         'level',
         'language',
-        'image_url',
-        'video_url',
         'price',
         'discount',
-        'published_date',
-        'last_updated',
+        'instructor_id',
+        'image_url',
+        'video_url',
+        'content_url',
         'status',
         'requirements',
         'what_you_will_learn',
@@ -45,7 +45,7 @@ class Course extends Model
         'average_rating' => 'decimal:2',
         'has_certificate' => 'boolean'
     ];
-    
+
 
     public function instructor(): BelongsTo
     {
@@ -85,5 +85,10 @@ class Course extends Model
     public function certificates(): HasMany
     {
         return $this->hasMany(Certificate::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
     }
 }
