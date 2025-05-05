@@ -69,7 +69,7 @@ class CategoryController extends Controller
             ->where('status', 'PUBLISHED')
             ->paginate(12);
 
-        return view('categories.show', compact('category', 'courses'));
+        return response()->json($courses);
     }
 
     /**
@@ -81,7 +81,7 @@ class CategoryController extends Controller
             ->where('id', '!=', $category->id)
             ->get();
 
-        return view('categories.edit', compact('category', 'categories'));
+        return response()->json($categories);
     }
 
     /**
@@ -95,7 +95,7 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|image|max:2048',
             'is_active' => 'boolean',
-            'display_order' => 'required|integer|min:0'
+            'display_order' => 'nullable|integer|min:0'
         ]);
 
         // S'assurer que is_active est un booléen
@@ -117,8 +117,7 @@ class CategoryController extends Controller
 
         $category->update($validated);
 
-        return redirect()->route('categories.index')
-            ->with('success', 'Catégorie mise à jour avec succès.');
+        return response()->json($category);
     }
 
     /**
@@ -142,7 +141,7 @@ class CategoryController extends Controller
             'is_active' => !$category->is_active
         ]);
 
-        return back()->with('success', $category->is_active ? 'Catégorie activée avec succès.' : 'Catégorie désactivée avec succès.');
+        return response()->json($category);
     }
 
     public function reorder(Request $request)

@@ -3,12 +3,12 @@
 namespace App\Models;
 
 use App\Models\Course;
+use App\Models\Profile;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
-use Symfony\Component\HttpKernel\Profiler\Profile;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -24,18 +24,18 @@ class User extends Authenticatable  implements MustVerifyEmail
         'lastName',
         'email',
         'password',
-        'lastLogin',
-        'isActive',
-        'settings',
         'role',
-        'remember_token',
-        'is_approved'
+        'is_approved',
+        'is_banned',
+        'ban_reason',
+        'banned_at'
     ];
 
     protected $casts = [
-        'lastLogin' => 'datetime',
-        'isActive' => 'boolean',
-        'settings' => 'array',
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_banned' => 'boolean',
+        'banned_at' => 'datetime'
     ];
 
     protected $hidden = [
@@ -43,13 +43,12 @@ class User extends Authenticatable  implements MustVerifyEmail
         'remember_token',
     ];
 
-
-    protected function casts(): array
+    /**
+     * Vérifie si l'utilisateur est un administrateur
+     */
+    public function isAdmin(): bool
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->role === 'admin';
     }
 
     public function profile(): HasOne
@@ -62,10 +61,13 @@ class User extends Authenticatable  implements MustVerifyEmail
         return $this->hasOne(UserSettings::class);
     }
 
+    /**
+     * Get the courses that the user is enrolled in
+     */
     public function enrolledCourses()
     {
-        return $this->belongsToMany(Course::class, 'course_enrollments', 'user_id', 'course_id')
-            ->withTimestamps();
+        return $this->belongsToMany(Course::class, 'enrollments')
+                    ->withPivot('enrollment_date', 'price', 'payment_id', 'status');
     }
 
     public function teachingCourses(): HasMany
@@ -93,9 +95,12 @@ class User extends Authenticatable  implements MustVerifyEmail
         return $this->hasMany(Response::class);
     }
 
-    public function shoppingCart(): HasOne
+    /**
+     * Get the user's shopping cart items
+     */
+    public function shoppingCart()
     {
-        return $this->hasOne(ShoppingCart::class);
+        return $this->hasMany(ShoppingCart::class);
     }
 
     public function orders(): HasMany
@@ -126,5 +131,17 @@ class User extends Authenticatable  implements MustVerifyEmail
     public function quizAttempts(): HasMany
     {
         return $this->hasMany(QuizAttempt::class, 'student_id');
+    }
+
+    /**
+     * Personnalise la notification de réinitialisation de mot de passe
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $url = config('app.frontend_url', 'http://localhost:5173') .
+               '/reset-password?token=' . $token .
+               '&email=' . urlencode($this->email);
+
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
     }
 }

@@ -71,14 +71,22 @@ class ProfileController extends Controller
     {
         try {
             $validated = $request->validated();
-        
+
             if ($request->hasFile('profilPicture')) {
                 $path = $request->file('profilPicture')->store('profiles', 'public');
                 $validated['profilPicture'] = $path;
             }
 
             $profile = Profile::where('user_id', $user_id)->first();
-            $profile->update($validated);
+
+            if (!$profile) {
+                // Créer un nouveau profil si aucun n'existe
+                $validated['user_id'] = $user_id;
+                $profile = Profile::create($validated);
+            } else {
+                // Mettre à jour le profil existant
+                $profile->update($validated);
+            }
 
             return response()->json($profile, 201);
         } catch (\Exception $e) {

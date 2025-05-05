@@ -19,7 +19,8 @@ class Lesson extends Model
         'content_url',
         'duration',
         'is_free',
-        'is_published'
+        'is_published',
+        'is_completed'
     ];
 
     protected $casts = [

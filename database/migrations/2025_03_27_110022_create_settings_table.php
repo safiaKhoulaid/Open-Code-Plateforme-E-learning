@@ -14,7 +14,7 @@ return new class extends Migration
         if (!Schema::hasTable('settings')) {
             Schema::create('settings', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
                 $table->boolean('email_notifications')->default(true);
                 $table->boolean('mobile_notifications')->default(true);
                 $table->string('language')->default('fr');

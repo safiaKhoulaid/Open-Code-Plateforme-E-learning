@@ -31,7 +31,8 @@ class Course extends Model
         'average_rating',
         'total_reviews',
         'total_students',
-        'has_certificate'
+        'has_certificate',
+        'is_completed'
     ];
 
     protected $casts = [
@@ -43,7 +44,8 @@ class Course extends Model
         'price' => 'decimal:2',
         'discount' => 'decimal:2',
         'average_rating' => 'decimal:2',
-        'has_certificate' => 'boolean'
+        'has_certificate' => 'boolean',
+        'is_completed' => 'boolean'
     ];
 
 
@@ -90,5 +92,9 @@ class Course extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
+    }
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }

@@ -7,12 +7,14 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "doctrine/dbal": "^4.2",
         "illuminate/console": "*",
         "illuminate/database": "*",
         "laravel/framework": "^12.5",
         "laravel/legacy-factories": "^1.4",
-        "laravel/sanctum": "^4.0",
+        "laravel/sanctum": "^4.1",
         "laravel/tinker": "^2.10.1",
+        "laravel/ui": "^4.6",
         "stripe/stripe-php": "^17.1"
     },
     "require-dev": {

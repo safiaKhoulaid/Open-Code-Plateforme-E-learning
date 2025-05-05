@@ -44,5 +44,7 @@ class Kernel extends HttpKernel
      */
     protected $routeMiddleware = [
         // ... existing route middleware ...
+        'role' => \App\Http\Middleware\CheckRole::class,
+        'admin' => \App\Http\Middleware\CheckRole::class . ':admin',
     ];
-} 
+}

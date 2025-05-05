@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Upload Limits
+    |--------------------------------------------------------------------------
+    |
+    | These values define the maximum upload sizes for the application.
+    |
+    */
+
+    'max_upload_size' => 500 * 1024 * 1024, // 500MB in bytes
+    'max_post_size' => 500 * 1024 * 1024,   // 500MB in bytes
+
 ];

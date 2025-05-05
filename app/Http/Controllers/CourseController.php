@@ -12,9 +12,16 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Models\Section;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Progress;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CourseController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum');
+    }
+
     public function store(Request $request): JsonResponse
     {
         try {
@@ -29,9 +36,6 @@ class CourseController extends Controller
                 'discount' => 'nullable|numeric|min:0',
                 'category_id' => 'required|numeric',
                 'instructor_id' => 'required|numeric',
-                'content_url' => 'nullable|string', // Peut être une chaîne base64 ou un chemin
-                // 'tags' => 'nullable|array',
-                // 'tags.*' => 'exists:tags,id',
                 'image_url' => 'nullable|string',
                 'video_url' => 'nullable|string',
                 'requirements' => 'nullable|array',
@@ -40,7 +44,6 @@ class CourseController extends Controller
                 'has_certificate' => 'boolean'
             ]);
 
-            // Vérifier si les catégories existent et sont actives
             $category = Category::find($validated['category_id']);
             if (!$category || !$category->is_active) {
                 return response()->json(['message' => 'La catégorie spécifiée n\'existe pas ou n\'est pas active'], 404);
@@ -182,8 +185,8 @@ class CourseController extends Controller
 
     public function index(): JsonResponse
     {
-        // Récupérer les cours avec toutes leurs relations
-        $courses = Course::with([
+        // Récupérer les cours avec pagination
+        $coursesQuery = Course::with([
             'categories',
             'tags',
             'instructor',
@@ -194,8 +197,9 @@ class CourseController extends Controller
                       }]);
             }
         ])
-        ->orderBy('created_at', 'desc')
-        ->paginate(12);
+        ->orderBy('created_at', 'desc');
+
+        $courses = $coursesQuery->paginate(10);
 
         // Transforme les URLs relatives en URLs complètes pour tous les cours
         foreach ($courses as $course) {
@@ -219,10 +223,36 @@ class CourseController extends Controller
             ->take(10)
             ->get();
 
+        $userId = Auth::id();
+
+        // Si l'utilisateur n'est pas connecté, retourner une collection vide pour courses_payes
+        if (!$userId) {
+            $coursePayed = collect();
+        } else {
+            $coursePayed = DB::table('courses as c')
+                ->join('order_items as o', 'c.id', '=', 'o.course_id')
+                ->join('payments as p', 'p.order_id', '=', 'o.order_id')
+                ->where('p.user_id', $userId)
+                ->groupBy('c.id')
+                ->select('c.*')
+                ->get();
+        }
+
         return response()->json([
-            'courses' => $courses, // Retourne toute la pagination avec relations
+            'courses' => [
+                'data' => $courses->getCollection(),
+                'current_page' => $courses->currentPage(),
+                'per_page' => $courses->perPage(),
+                'total' => $courses->total(),
+                'last_page' => $courses->lastPage()
+            ],
             'categories' => $categories,
             'tags' => $tags,
+            'courses_payes' => $coursePayed,
+            'debug_info' => [
+                'user_id' => $userId,
+                'courses_payes_count' => $coursePayed->count()
+            ],
             'message' => 'Données récupérées avec succès'
         ]);
     }
@@ -562,8 +592,13 @@ class CourseController extends Controller
             return $path;
         }
 
-        // Génère l'URL complète
-        return asset('storage/' . $path);
+        // Pour les chemins commençant par 'storage/', utiliser l'URL directe
+        if (strpos($path, 'storage/') === 0) {
+            return url($path);
+        }
+
+        // Pour les autres chemins relatifs dans le stockage public
+        return url('storage/' . $path);
     }
 
     /**

@@ -20,11 +20,11 @@ class ProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-        
-            'firstName' => 'required|string|max:255',
-            'lastName' => 'required|string|max:255',
-            'profilPicture' => 'nullable|string|max:255',
-            'biography' => 'nullable|string|max:1000',
+
+            'firstName' => 'string|max:255',
+            'lastName' => 'string|max:255',
+            'profilPicture' => 'string|max:255',
+            'biography' => 'string|max:1000',
             'linkdebLink' => 'nullable|url|max:255',
             'instagramLink' => 'nullable|url|max:255',
             'skills' => 'nullable|array',

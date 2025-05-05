@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    // ================================ Register ================================
     public function register(Request $request)
     {
         try {
@@ -37,18 +38,17 @@ class AuthController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => $validated['role'],
-                'is_approved' => $isApproved
+                'is_approved' => $isApproved,
 
             ]);
+
+
             $profile = Profile::create([
                 'user_id' => $user->id,
-              'firstName' => $user->firstName,
-              'lastName' => $user->lastName,
-            
-
-
-
+                'firstName' => $user->firstName,
+                'lastName' => $user->lastName,
             ]);
+
             $setting = Setting::create([
                 'user_id' => $user->id,
                 'email_notifications' => true,
@@ -65,14 +65,10 @@ class AuthController extends Controller
 
             Mail::to($user->email)->send(new WelcomeEmail($user));
 
-            // if ($validated['role'] === 'teacher') {
-
-            //     Mail::to('admin@example.com')->send(new NewTeacherRegistration($user));
-            // }
-
             return response()->json([
                 'user' => $user,
                 'profile' => $profile,
+                'setting' => $setting,
                 'message' => $isApproved
                     ? 'User created successfully. You can now log in.'
                     : 'User created successfully. Your account requires admin approval before you can log in.'
@@ -92,108 +88,149 @@ class AuthController extends Controller
         }
     }
 
+    // ================================ Login ================================
     public function login(Request $request)
-{
-    $validated = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required|string'
-    ]);
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string'
+        ]);
 
-    if (!Auth::attempt($validated)) {
-        return response()->json([
-            'message' => 'Invalid credentials'
-        ], 401);
-    }
-
-    $user = Auth::user();
-    if ($user->is_approved === false) {
-        // Déconnecter l'utilisateur puisqu'il s'est connecté mais n'est pas approuvé
-        Auth::logout();
-
-        return response()->json([
-            'message' => 'Your account is pending approval. Please contact the administrator.'
-        ], 403);
-    }
-    $token = $user->createToken('auth_token')->plainTextToken;
-
-    return response()->json([
-        'user' => $user,
-        'token' => $token
-    ], 200);
-}
-
-public function logout(Request $request)
-{
-    $request->user()->currentAccessToken()->delete();
-
-    return response()->json([
-        'message' => 'Logged out successfully'
-    ], 200);
-}
-
-
-public function forgotPassword(Request $request)
-{
-    // Valider l'email fourni
-    $request->validate([
-        'email' => 'required|email|exists:users,email',
-    ]);
-
-    try {
-        // Envoyer le lien de réinitialisation de mot de passe
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        // Vérifier le statut et renvoyer la réponse appropriée
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Password reset link sent to your email'], 200);
+        if (!Auth::attempt($validated)) {
+            return response()->json([
+                'message' => 'Invalid credentials'
+            ], 401);
         }
 
-        // Si le lien de réinitialisation ne peut pas être envoyé
-        return response()->json(['message' => 'Unable to send reset link'], 400);
+        $user = Auth::user();
+        if ($user->is_approved === false) {
+            // Déconnecter l'utilisateur puisqu'il s'est connecté mais n'est pas approuvé
+            Auth::logout();
 
-    } catch (\Exception $e) {
-        // En cas d'erreur, retourner un message générique
-        return response()->json(['message' => 'Error occurred while sending reset link', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Your account is pending approval. Please contact the administrator.'
+            ], 403);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token
+        ], 200);
     }
-}
 
 
-public function resetPassword(Request $request)
-{
-    $request->validate([
-        'token' => 'required',
-        'email' => 'required|email',
-        'password' => 'required|min:6|confirmed',
-    ]);
+    // ================================ Logout ================================
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
 
-    try {
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password)
-                ])->setRememberToken(Str::random(60));
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ], 200);
+    }
 
-                $user->save();
+    // ================================ Forgot Password ================================
+    public function forgotPassword(Request $request)
+    {
+        // Valider l'email fourni
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        try {
+            // Envoyer le lien de réinitialisation de mot de passe
+            $status = Password::sendResetLink(
+                $request->only('email')
+            );
+
+            // Vérifier le statut et renvoyer la réponse appropriée
+            if ($status === Password::RESET_LINK_SENT) {
+                return response()->json(['message' => 'Password reset link sent to your email'], 200);
             }
-        );
 
-        if ($status === Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'Password reset successfully'], 200);
+            // Si le lien de réinitialisation ne peut pas être envoyé
+            return response()->json(['message' => 'Unable to send reset link'], 400);
+
+        } catch (\Exception $e) {
+            // En cas d'erreur, retourner un message générique
+            return response()->json(['message' => 'Error occurred while sending reset link', 'error' => $e->getMessage()], 500);
         }
-
-        return response()->json(['message' => 'Unable to reset password'], 400);
-
-    } catch (\Exception $e) {
-        return response()->json(['message' => 'Error occurred while resetting password'], 500);
     }
-}
-public function getUser(Request $request)
-{
-    return response()->json([
-        'user' => $request->user()
-    ]);
-}
+
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        try {
+            $status = Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function ($user, $password) {
+                    $user->forceFill([
+                        'password' => Hash::make($password)
+                    ])->setRememberToken(Str::random(60));
+
+                    $user->save();
+                }
+            );
+
+            if ($status === Password::PASSWORD_RESET) {
+                return response()->json(['message' => 'Password reset successfully'], 200);
+            }
+
+            return response()->json(['message' => 'Unable to reset password'], 400);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error occurred while resetting password'], 500);
+        }
+    }
+    public function getUser(Request $request)
+    {
+        return response()->json([
+            'user' => $request->user()
+        ]);
+    }
+
+    // ================================ Pending Teachers ================================
+    /**
+     * Récupère la liste des enseignants qui attendent une approbation
+     */
+    public function getPendingTeachers()
+    {
+        try {
+            // Vérifier que l'utilisateur est un administrateur
+            if (!Auth::user() || Auth::user()->role !== 'admin') {
+                return response()->json([
+                    'message' => 'Unauthorized. Only administrators can access this resource.'
+                ], 403);
+            }
+
+            // Récupérer tous les enseignants non approuvés
+            $pendingTeachers = User::where('role', 'teacher')
+                ->where('is_approved', false)
+                ->with('profile')
+                ->get();
+
+            return response()->json([
+                'pendingTeachers' => $pendingTeachers
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to retrieve pending teachers',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ================================ Approve Teacher ================================
+    /**
+     * Approuve un enseignant
+     */
+    
 }

@@ -12,26 +12,46 @@ class Enrollment extends Model
     protected $fillable = [
         'student_id',
         'course_id',
-        'enrollment_date',
-        'expiry_date',
-        'price',
-        'payment_id',
-        'status'
+        'status',
+        'enrolled_at',
+        'last_accessed_at',
+        'completion_percentage'
     ];
 
     protected $casts = [
-        'enrollment_date' => 'datetime',
-        'expiry_date' => 'datetime',
-        'price' => 'decimal:2'
+        'enrolled_at' => 'datetime',
+        'last_accessed_at' => 'datetime',
+        'completion_percentage' => 'float'
     ];
 
+    /**
+     * Obtenir l'étudiant associé à cette inscription
+     */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /**
+     * Obtenir le cours associé à cette inscription
+     */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * Obtenir la progression associée à cette inscription
+     */
+    public function progress(): BelongsTo
+    {
+        return $this->belongsTo(Progress::class, 'course_id', 'course_id')
+            ->where('user_id', $this->student_id);
+    }
+
+    public function enrolledCourses()
+    {
+        return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id')
+                    ->withPivot('enrollment_date', 'price', 'payment_id', 'status');
     }
 }

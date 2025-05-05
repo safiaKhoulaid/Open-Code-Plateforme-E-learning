@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Progress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -16,113 +17,175 @@ class EnrollmentController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index()
+    public function __construct()
     {
-        $enrollments = Auth::user()->enrolledCourses()
-            ->with(['course', 'course.instructor'])
-            ->paginate(10);
-
-        return view('enrollments.index', compact('enrollments'));
+        $this->middleware('auth:sanctum');
     }
 
+    /**
+     * Inscrire un utilisateur à un cours après l'achat
+     */
     public function store(Request $request, Course $course)
     {
-        $user = Auth::user();
+        try {
+            // Vérifier si l'utilisateur est déjà inscrit
+            $existingEnrollment = Enrollment::where('student_id', Auth::id())
+                ->where('course_id', $course->id)
+                ->first();
 
-        if ($user->enrolledCourses()->where('course_id', $course->id)->exists()) {
-            return back()->with('error', 'Vous êtes déjà inscrit à ce cours.');
-        }
-
-        if ($course->price > 0) {
-            // Créer une commande
-            $order = Order::create([
-                'user_id' => $user->id,
-                'total_amount' => $course->price,
-                'discount' => $course->discount ?? 0,
-                'tax' => 0, // À calculer selon les règles fiscales
-                'final_amount' => $course->price - ($course->discount ?? 0),
-                'payment_method' => $request->payment_method,
-                'status' => 'PENDING',
-                'created_date' => now(),
-                'billing_address' => $request->billing_address
-            ]);
-
-            // Créer un élément de commande
-            $order->items()->create([
-                'course_id' => $course->id,
-                'price' => $course->price,
-                'discount' => $course->discount ?? 0
-            ]);
-
-            // Créer un paiement
-            $payment = Payment::create([
-                'order_id' => $order->id,
-                'user_id' => $user->id,
-                'amount' => $order->final_amount,
-                'currency' => 'EUR',
-                'method' => $request->payment_method,
-                'status' => 'PENDING',
-                'transaction_id' => null,
-                'timestamp' => now(),
-                'billing_details' => $request->billing_address
-            ]);
-
-            // Rediriger vers la page de paiement
-            return redirect()->route('payments.process', $payment);
-        }
-
-        // Si le cours est gratuit, créer directement l'inscription
-        DB::transaction(function () use ($user, $course) {
-            $enrollment = $user->enrolledCourses()->attach($course->id, [
-                'enrollment_date' => now(),
-                'price' => 0,
-                'status' => 'ACTIVE'
-            ]);
-
-            // Créer un certificat si le cours en propose un
-            if ($course->has_certificate) {
-                $course->certificates()->create([
-                    'user_id' => $user->id,
-                    'issue_date' => now(),
-                    'title' => $course->title,
-                    'instructor_name' => $course->instructor->name,
-                    'student_name' => $user->name,
-                    'course_title' => $course->title
-                ]);
+            if ($existingEnrollment) {
+                return response()->json([
+                    'message' => 'Vous êtes déjà inscrit à ce cours'
+                ], 400);
             }
-        });
 
-        return redirect()->route('courses.show', $course)
-            ->with('success', 'Inscription réussie au cours.');
+            // Créer l'inscription
+            $enrollment = Enrollment::create([
+                'student_id' => Auth::id(),
+                'course_id' => $course->id,
+                'status' => 'active',
+                'enrolled_at' => now(),
+                'last_accessed_at' => now(),
+                'completion_percentage' => 0
+            ]);
+
+            // Créer une entrée de progression pour l'utilisateur
+            Progress::create([
+                'user_id' => Auth::id(),
+                'course_id' => $course->id,
+                'completed_lessons' => [],
+                'current_lesson_id' => null,
+                'progress_percentage' => 0,
+                'last_activity_at' => now()
+            ]);
+
+            return response()->json([
+                'message' => 'Inscription au cours réussie',
+                'data' => $enrollment->load('course', 'student')
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de l\'inscription au cours',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function show(Course $course)
+    /**
+     * Obtenir toutes les inscriptions de l'utilisateur connecté
+     */
+    public function index()
     {
-        $this->authorize('view', $course);
+        try {
+            $enrollments = Enrollment::where('student_id', Auth::id())
+                ->with(['course' => function($query) {
+                    $query->with(['instructor', 'sections.lessons']);
+                }])
+                ->orderBy('enrolled_at', 'desc')
+                ->get();
 
-        $enrollment = Auth::user()->enrolledCourses()
-            ->where('course_id', $course->id)
-            ->first();
-
-        if (!$enrollment) {
-            return back()->with('error', 'Vous n\'êtes pas inscrit à ce cours.');
+            return response()->json([
+                'message' => 'Liste des inscriptions récupérée avec succès',
+                'data' => $enrollments
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des inscriptions',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return view('enrollments.show', compact('course', 'enrollment'));
     }
 
-    public function destroy(Course $course)
+    /**
+     * Obtenir les détails d'une inscription spécifique
+     */
+    public function show(Enrollment $enrollment)
     {
-        $user = Auth::user();
+        try {
+            // Vérifier si l'inscription appartient à l'utilisateur connecté
+            if ($enrollment->student_id !== Auth::id()) {
+                return response()->json([
+                    'message' => 'Non autorisé'
+                ], 403);
+            }
 
-        if (!$user->enrolledCourses()->where('course_id', $course->id)->exists()) {
-            return back()->with('error', 'Vous n\'êtes pas inscrit à ce cours.');
+            $enrollment->load([
+                'course' => function($query) {
+                    $query->with(['instructor', 'sections.lessons']);
+                },
+                'progress'
+            ]);
+
+            return response()->json([
+                'message' => 'Détails de l\'inscription récupérés avec succès',
+                'data' => $enrollment
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des détails de l\'inscription',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
 
-        $user->enrolledCourses()->detach($course->id);
+    /**
+     * Mettre à jour le statut d'une inscription
+     */
+    public function update(Request $request, Enrollment $enrollment)
+    {
+        try {
+            // Vérifier si l'inscription appartient à l'utilisateur connecté
+            if ($enrollment->student_id !== Auth::id()) {
+                return response()->json([
+                    'message' => 'Non autorisé'
+                ], 403);
+            }
 
-        return redirect()->route('enrollments.index')
-            ->with('success', 'Désinscription réussie du cours.');
+            $validated = $request->validate([
+                'status' => 'required|in:active,completed,paused,cancelled'
+            ]);
+
+            $enrollment->update([
+                'status' => $validated['status'],
+                'last_accessed_at' => now()
+            ]);
+
+            return response()->json([
+                'message' => 'Statut de l\'inscription mis à jour avec succès',
+                'data' => $enrollment
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la mise à jour du statut de l\'inscription',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Supprimer une inscription
+     */
+    public function destroy(Enrollment $enrollment)
+    {
+        try {
+            // Vérifier si l'inscription appartient à l'utilisateur connecté
+            if ($enrollment->student_id !== Auth::id()) {
+                return response()->json([
+                    'message' => 'Non autorisé'
+                ], 403);
+            }
+
+            $enrollment->delete();
+
+            return response()->json([
+                'message' => 'Inscription supprimée avec succès'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la suppression de l\'inscription',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function certificate(Course $course)
@@ -153,5 +216,78 @@ class EnrollmentController extends Controller
         }
 
         return Storage::disk('public')->download($certificate->pdf_url);
+    }
+
+    /**
+     * Créer une inscription automatiquement après le paiement
+     */
+    public function enrollAfterPayment(Payment $payment)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Vérifier si le paiement est réussi
+            if ($payment->status !== 'COMPLETED') {
+                throw new \Exception('Le paiement n\'est pas complété');
+            }
+
+            // Récupérer la commande et le cours
+            $order = $payment->order;
+            $orderItem = $order->items->first(); // Supposons qu'il n'y a qu'un cours par commande
+            $course = Course::findOrFail($orderItem->course_id);
+
+            // Vérifier si l'utilisateur est déjà inscrit
+            $existingEnrollment = Enrollment::where('student_id', $payment->user_id)
+                ->where('course_id', $course->id)
+                ->first();
+
+            if ($existingEnrollment) {
+                throw new \Exception('L\'utilisateur est déjà inscrit à ce cours');
+            }
+
+            // Créer l'inscription
+            $enrollment = Enrollment::create([
+                'student_id' => $payment->user_id,
+                'course_id' => $course->id,
+                'status' => 'active',
+                'enrolled_at' => now(),
+                'last_accessed_at' => now(),
+                'completion_percentage' => 0
+            ]);
+
+            // Créer une entrée de progression
+            Progress::create([
+                'user_id' => $payment->user_id,
+                'course_id' => $course->id,
+                'completed_lessons' => [],
+                'current_lesson_id' => null,
+                'progress_percentage' => 0,
+                'last_activity_at' => now()
+            ]);
+
+            // Si le cours offre un certificat, le créer
+            if ($course->has_certificate) {
+                $course->certificates()->create([
+                    'user_id' => $payment->user_id,
+                    'issue_date' => null, // Sera mis à jour une fois le cours terminé
+                    'completion_date' => null,
+                    'status' => 'pending'
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Inscription créée avec succès après paiement',
+                'data' => $enrollment->load('course', 'student')
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Erreur lors de la création de l\'inscription après paiement',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

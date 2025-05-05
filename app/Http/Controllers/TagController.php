@@ -8,47 +8,55 @@ use Illuminate\Http\Request;
 
 class TagController extends Controller
 {
+    /**
+     * Constructeur avec middleware d'authentification
+     */
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum');
+    }
+
     public function index()
     {
         $tags = Tag::withCount('courses')
             ->orderBy('popularity', 'desc')
             ->paginate(20);
 
-        return view('tags.index', compact('tags'));
+        return response()->json($tags);
     }
 
     public function store(Request $request)
-{
-    try {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'string',
-        ]);
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'string|nullable',
+            ]);
 
-        // Vérifie si un tag avec ce nom existe déjà
-        $existingTag = Tag::where('name', $validated['name'])->first();
+            // Vérifie si un tag avec ce nom existe déjà
+            $existingTag = Tag::where('name', $validated['name'])->first();
 
-        if ($existingTag) {
+            if ($existingTag) {
+                return response()->json([
+                    'tag' => $existingTag,
+                    'message' => 'Tag déjà existant.'
+                ], 200);
+            }
+
+            // Sinon, on le crée
+            $tag = Tag::create($validated);
+
             return response()->json([
-                'tag' => $existingTag,
-                'message' => 'Tag déjà existant.'
-            ], 200);
+                'tag' => $tag,
+                'message' => 'Tag créé avec succès.'
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Sinon, on le crée
-        $tag = Tag::create($validated);
-
-        return response()->json([
-            'tag' => $tag,
-            'message' => 'Tag créé avec succès.'
-        ], 201);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
 
     public function show(Tag $tag)
     {
@@ -165,6 +173,116 @@ class TagController extends Controller
 
         return redirect()->route('tags.index')
             ->with('success', 'Tags fusionnés avec succès.');
+    }
+
+    /**
+     * Récupérer les tags d'un cours
+     */
+    public function getCourseTags(Course $course)
+    {
+        try {
+            $tags = $course->tags()->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $tags
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors de la récupération des tags',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Attacher des tags à un cours
+     */
+    public function attachTags(Request $request, Course $course)
+    {
+        try {
+            $validated = $request->validate([
+                'tags' => 'required|array',
+                'tags.*' => 'exists:tags,id'
+            ]);
+
+            $course->tags()->attach($validated['tags']);
+
+            // Mettre à jour la popularité des tags
+            foreach ($validated['tags'] as $tagId) {
+                $tag = Tag::find($tagId);
+                $this->updatePopularity($tag);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tags attachés avec succès',
+                'data' => $course->tags()->get()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors de l\'attachement des tags',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Détacher un tag d'un cours
+     */
+    public function detach(Course $course, Tag $tag)
+    {
+        try {
+            $course->tags()->detach($tag->id);
+
+            // Mettre à jour la popularité du tag
+            $this->updatePopularity($tag);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tag détaché avec succès'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors du détachement du tag',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Synchroniser les tags d'un cours
+     */
+    public function syncTags(Request $request, Course $course)
+    {
+        try {
+            $validated = $request->validate([
+                'tags' => 'required|array',
+                'tags.*' => 'required|integer|exists:tags,id'
+            ]);
+
+            $course->tags()->sync($validated['tags']);
+
+            // Mettre à jour la popularité de tous les tags
+            Tag::whereIn('id', $validated['tags'])->get()->each(function ($tag) {
+                $this->updatePopularity($tag);
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tags synchronisés avec succès',
+                'data' => $course->tags()->get()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors de la synchronisation des tags',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
 

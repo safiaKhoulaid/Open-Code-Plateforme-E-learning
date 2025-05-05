@@ -7,12 +7,14 @@ use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\Rating;
 use App\Models\Section;
 use App\Models\Category;
-use App\Models\Enrollment;
-use App\Models\Certificate;
 use App\Models\Resource;
 use App\Models\Wishlist;
+use App\Models\Enrollment;
+use App\Models\Certificate;
+use App\Models\ShoppingCart;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -22,62 +24,97 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        Wishlist::factory(10)->create([
-            'user_id' => 6,
+        // Créer des utilisateurs
+        User::factory(10)->create();
+
+        // Créer des catégories
+        Category::factory(5)->create();
+
+        // Créer des catégories enfants
+        Category::factory(10)->create([
+            'parent_id' => fn() => Category::inRandomOrder()->first()->id
         ]);
-        // // Créer d'abord les leçons nécessaires
-        // Lesson::factory(10)->create();
-        // Puis créer les ressources
-        // Resource::factory(100)->create();
-        // Category::factory(2)->create();
-        // Créer quelques utilisateurs
-        // User::factory(10)->create();
-        // Tag::factory(10)->create();
-        // Course::factory(10)->create();
-        // Section::factory(10)->create();
-        // Enrollment::factory(10)->create();
-        // Certificate::factory(10)->create([
-        //     'user_id' => 303,
-        //     'course_id' => Course::factory(),
-        // ]);
-        // Enrollment::factory(10)->create([
-        //     'student_id' => 303,
-        // ]);
 
-        // Créer des catégories spécifiques
-        // Category::create([
-        //     'title' => 'Catégorie Parente',
-        //     'description' => 'Description de la catégorie parente',
-        //     'is_active' => true,
-        //     'display_order' => 1,
-        //     // autres champs nécessaires
-        // ]);
+        // Créer des tags
+        Tag::factory(20)->create();
 
-        // Category::create([
-        //     'title' => 'Programmation',
-        //     'description' => 'Cours de programmation',
+        // Créer des cours
+        Course::factory(15)->create();
 
-        //     'is_active' => true,
-        //     'display_order' => 2
-        // ]);
+        // Créer des sections pour les cours
+        $courses = Course::all();
+        foreach ($courses as $course) {
+            Section::factory(rand(3, 6))->create([
+                'course_id' => $course->id
+            ]);
+        }
 
-        // // Créer des tags spécifiques
-        // Tag::create([
-        //     'name' => 'Laravel',
-        //     'course_count' => 0,
-        //     'popularity' => 0
-        // ]);
+        // Créer des leçons pour les sections
+        $sections = Section::all();
+        foreach ($sections as $section) {
+            Lesson::factory(rand(2, 5))->create([
+                'section_id' => $section->id
+            ]);
+        }
 
-        // Tag::create([
-        //     'name' => 'PHP',
-        //     'course_count' => 0,
-        //     'popularity' => 0
-        // ]);
+        // Créer des évaluations pour les cours
+        foreach ($courses as $course) {
+            Rating::factory(rand(5, 15))->create([
+                'course_id' => $course->id,
+                'user_id' => fn() => User::inRandomOrder()->first()->id
+            ]);
+        }
 
-        // Créer les tags et les cours
-        // $this->call([
-        //     TagSeeder::class,
-        //     CourseSeeder::class,
-        // ]);
+        // Créer des inscriptions aux cours
+        $users = User::all();
+        foreach ($users as $user) {
+            $courseSelection = $courses->random(rand(1, 5));
+            foreach ($courseSelection as $course) {
+                Enrollment::factory()->create([
+                    'user_id' => $user->id,
+                    'course_id' => $course->id
+                ]);
+            }
+        }
+
+        // Créer des wishlists
+        foreach ($users as $user) {
+            $courseSelection = $courses->random(rand(1, 3));
+            foreach ($courseSelection as $course) {
+                Wishlist::factory()->create([
+                    'user_id' => $user->id,
+                    'course_id' => $course->id
+                ]);
+            }
+        }
+
+        // Créer des paniers d'achat
+        foreach ($users as $user) {
+            $courseSelection = $courses->random(rand(1, 3));
+            foreach ($courseSelection as $course) {
+                ShoppingCart::factory()->create([
+                    'user_id' => $user->id,
+                    'course_id' => $course->id
+                ]);
+            }
+        }
+
+        // Créer des certificats pour les cours terminés
+        foreach ($users as $user) {
+            $enrollments = $user->enrollments()->inRandomOrder()->limit(rand(0, 3))->get();
+            foreach ($enrollments as $enrollment) {
+                Certificate::factory()->create([
+                    'user_id' => $user->id,
+                    'course_id' => $enrollment->course_id
+                ]);
+            }
+        }
+
+        // Appeler d'autres seeders si nécessaire
+        $this->call([
+            // TagSeeder::class,
+            // CourseSeeder::class,
+            // ShoppingCartSeeder::class,
+        ]);
     }
 }
