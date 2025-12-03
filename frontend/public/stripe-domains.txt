@@ -1,0 +1,12 @@
+# Domaines Stripe à autoriser
+# Copiez cette liste dans les paramètres de votre bloqueur de publicités (uBlock Origin, AdBlock, etc.)
+
+js.stripe.com
+api.stripe.com
+checkout.stripe.com
+hooks.stripe.com
+m.stripe.com
+m.stripe.network
+q.stripe.com
+r.stripe.com
+b.stripecdn.com 

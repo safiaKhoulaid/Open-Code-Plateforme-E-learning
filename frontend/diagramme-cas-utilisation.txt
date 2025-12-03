@@ -1,0 +1,106 @@
+@startuml Diagramme de cas d'utilisation - Plateforme de cours en ligne
+
+skinparam actorStyle awesome
+
+' Acteurs
+actor "Visiteur" as Visiteur
+actor "Étudiant" as Etudiant
+actor "Enseignant" as Enseignant
+actor "Administrateur" as Admin
+
+' Relations entre acteurs
+Etudiant -|> Visiteur
+Enseignant -|> Visiteur
+Admin -|> Visiteur
+
+' Cas d'utilisation pour Visiteur
+rectangle "Fonctionnalités accessibles à tous" {
+  usecase "Consulter les cours disponibles" as UC1
+  usecase "S'inscrire sur la plateforme" as UC2
+  usecase "Se connecter" as UC3
+  usecase "Rechercher des cours" as UC4
+  usecase "Consulter les détails d'un cours" as UC5
+}
+
+' Cas d'utilisation pour Étudiant
+rectangle "Fonctionnalités Étudiant" {
+  usecase "S'inscrire à un cours" as UC6
+  usecase "Suivre un cours" as UC7
+  usecase "Télécharger les ressources" as UC8
+  usecase "Consulter les leçons" as UC9
+  usecase "Marquer une leçon comme terminée" as UC10
+  usecase "Obtenir un certificat" as UC11
+  usecase "Télécharger/Imprimer un certificat" as UC12
+  usecase "Évaluer un cours" as UC13
+  usecase "Gérer son profil étudiant" as UC14
+  usecase "Ajouter un cours aux favoris" as UC15
+}
+
+' Cas d'utilisation pour Enseignant
+rectangle "Fonctionnalités Enseignant" {
+  usecase "Créer un nouveau cours" as UC16
+  usecase "Ajouter des sections à un cours" as UC17
+  usecase "Ajouter des leçons" as UC18
+  usecase "Télécharger du contenu (vidéo, PDF)" as UC19
+  usecase "Gérer les ressources" as UC20
+  usecase "Modifier un cours" as UC21
+  usecase "Publier/Dépublier un cours" as UC22
+  usecase "Consulter les statistiques de ses cours" as UC23
+  usecase "Gérer son profil enseignant" as UC24
+  usecase "Voir la liste des étudiants inscrits" as UC25
+}
+
+' Cas d'utilisation pour Administrateur
+rectangle "Fonctionnalités Administrateur" {
+  usecase "Gérer les utilisateurs" as UC26
+  usecase "Gérer les catégories de cours" as UC27
+  usecase "Valider/Rejeter des cours" as UC28
+  usecase "Consulter les statistiques globales" as UC29
+  usecase "Gérer les paramètres de la plateforme" as UC30
+  usecase "Gérer les tags" as UC31
+  usecase "Gérer les certificats" as UC32
+  usecase "Bannir/Débannir un utilisateur" as UC33
+}
+
+' Relations pour le Visiteur
+Visiteur --> UC1
+Visiteur --> UC2
+Visiteur --> UC3
+Visiteur --> UC4
+Visiteur --> UC5
+
+' Relations pour l'Étudiant
+Etudiant --> UC6
+Etudiant --> UC7
+Etudiant --> UC8
+Etudiant --> UC9
+Etudiant --> UC10
+Etudiant --> UC11
+Etudiant --> UC12
+Etudiant --> UC13
+Etudiant --> UC14
+Etudiant --> UC15
+
+' Relations pour l'Enseignant
+Enseignant --> UC16
+Enseignant --> UC17
+Enseignant --> UC18
+Enseignant --> UC19
+Enseignant --> UC20
+Enseignant --> UC21
+Enseignant --> UC22
+Enseignant --> UC23
+Enseignant --> UC24
+Enseignant --> UC25
+
+' Relations pour l'Administrateur
+Admin --> UC26
+Admin --> UC27
+Admin --> UC28
+Admin --> UC29
+Admin --> UC30
+Admin --> UC31
+Admin --> UC32
+Admin --> UC33
+
+@enduml 

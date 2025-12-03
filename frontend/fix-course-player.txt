@@ -1,0 +1,88 @@
+# Corrections pour coursePLayer.tsx
+
+## Problème
+Le problème actuel est que l'URL pour accéder au contenu des leçons (vidéos et PDF) n'est pas correctement utilisée, ce qui entraîne une erreur 403 Forbidden.
+
+## Solutions
+
+1. Dans la partie vidéo (ligne ~610), remplacer:
+```jsx
+{currentLesson?.type === "video" && (
+  <div className="bg-black aspect-video">
+    <div className="relative w-full h-full flex items-center justify-center">
+      <Image
+        src={currentLesson?.content_url || "/placeholder.svg?height=600&width=1200"}
+        alt={currentLesson?.title || "Vidéo du cours"}
+        layout="fill"
+        objectFit="contain"
+      />
+      <button className="absolute inset-0 flex items-center justify-center">
+        <div className="h-16 w-16 rounded-full bg-white/80 flex items-center justify-center">
+          <Play className="h-8 w-8 text-orange-500 ml-1" />
+        </div>
+      </button>
+    </div>
+  </div>
+)}
+```
+
+Par:
+```jsx
+{currentLesson?.content_type === "video" && (
+  <div className="bg-black aspect-video">
+    <div className="relative w-full h-full flex items-center justify-center">
+      {currentLesson?.content_url ? (
+        <video
+          ref={videoRef}
+          src={currentLesson.content_url}
+          className="w-full h-full"
+          controls
+          poster={course.image_url}
+        />
+      ) : (
+        <>
+          <Image
+            src="/placeholder.svg?height=600&width=1200"
+            alt={currentLesson?.title || "Vidéo du cours"}
+            layout="fill"
+            objectFit="contain"
+          />
+          <button className="absolute inset-0 flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full bg-white/80 flex items-center justify-center">
+              <Play className="h-8 w-8 text-orange-500 ml-1" />
+            </div>
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+)}
+```
+
+2. Ajouter le support pour les PDF après la section vidéo:
+```jsx
+{currentLesson?.content_type === "pdf" && (
+  <div className="bg-gray-100 aspect-video">
+    <div className="w-full h-full flex items-center justify-center p-4">
+      {currentLesson?.content_url ? (
+        <iframe
+          src={currentLesson.content_url}
+          className="w-full h-full border-0"
+          title={currentLesson.title || "Document PDF"}
+          allow="fullscreen"
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center text-gray-500">
+          <FileText className="h-12 w-12 mb-2" />
+          <p>Le PDF n'est pas disponible</p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+```
+
+## Important
+- Assurez-vous que les URLs dans `content_url` sont complètes et fonctionnent directement lorsqu'elles sont ouvertes dans le navigateur.
+- Si les URLs ne contiennent pas le domaine complet, vous devrez peut-être les préfixer avec le domaine du serveur backend.
+- Le fichier PDF que vous avez mentionné `file:///C:/Users/ycode/open-code/storage/app/public/public/uploads/lessons/content/hFjliJ1Ars0dvmYLJ3T48PP5RCwtUCOYlAY2CDtx.pdf` fonctionne en local parce qu'il pointe directement vers le système de fichiers, mais dans l'application web, nous avons besoin d'une URL HTTP/HTTPS. 
